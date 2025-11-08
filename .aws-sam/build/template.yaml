@@ -1,0 +1,453 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: WiseUni Cognito Learning Mini Project - Complete Infrastructure
+Parameters:
+  ProjectName:
+    Type: String
+    Default: wiseuni
+    Description: Project name prefix for resources
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+    - dev
+    - staging
+    - prod
+    Description: Environment name
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.11
+    MemorySize: 256
+    Environment:
+      Variables:
+        LOG_LEVEL: INFO
+Resources:
+  WiseUniUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName:
+        Fn::Sub: ${ProjectName}-user-pool-${Environment}
+      UsernameAttributes:
+      - email
+      UsernameConfiguration:
+        CaseSensitive: false
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          TemporaryPasswordValidityDays: 7
+      AutoVerifiedAttributes:
+      - email
+      MfaConfiguration: OPTIONAL
+      EnabledMfas:
+      - SOFTWARE_TOKEN_MFA
+      EmailConfiguration:
+        EmailSendingAccount: COGNITO_DEFAULT
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+        - Name: verified_email
+          Priority: 1
+      Schema:
+      - Name: email
+        AttributeDataType: String
+        Required: true
+        Mutable: false
+      - Name: name
+        AttributeDataType: String
+        Required: true
+        Mutable: true
+      - Name: student_id
+        AttributeDataType: String
+        Mutable: true
+      LambdaConfig:
+        PreSignUp:
+          Fn::GetAtt:
+          - PreSignupFunction
+          - Arn
+        PostConfirmation:
+          Fn::GetAtt:
+          - PostConfirmationFunction
+          - Arn
+        PreAuthentication:
+          Fn::GetAtt:
+          - PreAuthenticationFunction
+          - Arn
+        CustomMessage:
+          Fn::GetAtt:
+          - CustomMessageFunction
+          - Arn
+      UserPoolAddOns:
+        AdvancedSecurityMode: ENFORCED
+  WiseUniUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain:
+        Fn::Sub: ${ProjectName}-students-${Environment}-${AWS::AccountId}
+      UserPoolId:
+        Ref: WiseUniUserPool
+  WiseUniUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName:
+        Fn::Sub: ${ProjectName}-web-client-${Environment}
+      UserPoolId:
+        Ref: WiseUniUserPool
+      AllowedOAuthFlows:
+      - code
+      AllowedOAuthScopes:
+      - email
+      - openid
+      - profile
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+      - http://localhost:3000/callback
+      - Fn::Sub: https://app.${ProjectName}.com/callback
+      LogoutURLs:
+      - http://localhost:3000/
+      - Fn::Sub: https://app.${ProjectName}.com/
+      SupportedIdentityProviders:
+      - COGNITO
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 1
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      ExplicitAuthFlows:
+      - ALLOW_USER_SRP_AUTH
+      - ALLOW_REFRESH_TOKEN_AUTH
+      - ALLOW_USER_PASSWORD_AUTH
+      GenerateSecret: false
+  WiseUniIdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName:
+        Fn::Sub: ${ProjectName}_identity_pool_${Environment}
+      AllowUnauthenticatedIdentities: true
+      CognitoIdentityProviders:
+      - ClientId:
+          Ref: WiseUniUserPoolClient
+        ProviderName:
+          Fn::GetAtt:
+          - WiseUniUserPool
+          - ProviderName
+  CognitoAuthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub: ${ProjectName}-authenticated-role-${Environment}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Federated: cognito-identity.amazonaws.com
+          Action: sts:AssumeRoleWithWebIdentity
+          Condition:
+            StringEquals:
+              cognito-identity.amazonaws.com:aud:
+                Ref: WiseUniIdentityPool
+            ForAnyValue:StringLike:
+              cognito-identity.amazonaws.com:amr: authenticated
+      Policies:
+      - PolicyName: AuthenticatedUserPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Sid: ListOwnFolder
+            Effect: Allow
+            Action:
+            - s3:ListBucket
+            Resource:
+            - Fn::GetAtt:
+              - HomeworkBucket
+              - Arn
+            Condition:
+              StringLike:
+                s3:prefix:
+                - Fn::Join:
+                  - ''
+                  - - $
+                    - '{cognito-identity.amazonaws.com:sub}/*'
+          - Sid: AccessOwnFiles
+            Effect: Allow
+            Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:DeleteObject
+            Resource:
+            - Fn::Sub:
+              - ${BucketArn}/${CognitoId}/*
+              - BucketArn:
+                  Fn::GetAtt:
+                  - HomeworkBucket
+                  - Arn
+                CognitoId:
+                  Fn::Join:
+                  - ''
+                  - - $
+                    - '{cognito-identity.amazonaws.com:sub}'
+          - Sid: QueryOwnGrades
+            Effect: Allow
+            Action:
+            - dynamodb:GetItem
+            - dynamodb:Query
+            Resource:
+            - Fn::GetAtt:
+              - GradesTable
+              - Arn
+            Condition:
+              ForAllValues:StringEquals:
+                dynamodb:LeadingKeys:
+                - Fn::Join:
+                  - ''
+                  - - $
+                    - '{cognito-identity.amazonaws.com:sub}'
+  CognitoUnauthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub: ${ProjectName}-unauthenticated-role-${Environment}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Federated: cognito-identity.amazonaws.com
+          Action: sts:AssumeRoleWithWebIdentity
+          Condition:
+            StringEquals:
+              cognito-identity.amazonaws.com:aud:
+                Ref: WiseUniIdentityPool
+            ForAnyValue:StringLike:
+              cognito-identity.amazonaws.com:amr: unauthenticated
+      Policies:
+      - PolicyName: UnauthenticatedUserPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Sid: ReadPublicCatalog
+            Effect: Allow
+            Action:
+            - s3:GetObject
+            Resource:
+            - Fn::Sub: ${HomeworkBucket.Arn}/public/*
+          - Sid: ListPublicCatalog
+            Effect: Allow
+            Action:
+            - s3:ListBucket
+            Resource:
+            - Fn::GetAtt:
+              - HomeworkBucket
+              - Arn
+            Condition:
+              StringLike:
+                s3:prefix:
+                - public/*
+  IdentityPoolRoleAttachment:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId:
+        Ref: WiseUniIdentityPool
+      Roles:
+        authenticated:
+          Fn::GetAtt:
+          - CognitoAuthenticatedRole
+          - Arn
+        unauthenticated:
+          Fn::GetAtt:
+          - CognitoUnauthenticatedRole
+          - Arn
+  PreSignupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${ProjectName}-pre-signup-${Environment}
+      CodeUri: PreSignupFunction
+      Handler: index.handler
+      Description: Validates email domain before signup
+    Metadata:
+      SamResourceId: PreSignupFunction
+  PostConfirmationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${ProjectName}-post-confirmation-${Environment}
+      CodeUri: PostConfirmationFunction
+      Handler: index.handler
+      Description: Sends welcome email after confirmation
+      Policies:
+      - SESCrudPolicy:
+          IdentityName: egepakten@icloud.com
+    Metadata:
+      SamResourceId: PostConfirmationFunction
+  PreAuthenticationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${ProjectName}-pre-authentication-${Environment}
+      CodeUri: PreAuthenticationFunction
+      Handler: index.handler
+      Description: Validates login during semester only
+    Metadata:
+      SamResourceId: PreAuthenticationFunction
+  CustomMessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${ProjectName}-custom-message-${Environment}
+      CodeUri: CustomMessageFunction
+      Handler: index.handler
+      Description: Customizes verification emails
+    Metadata:
+      SamResourceId: CustomMessageFunction
+  PreSignupPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Ref: PreSignupFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+        - WiseUniUserPool
+        - Arn
+  PostConfirmationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Ref: PostConfirmationFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+        - WiseUniUserPool
+        - Arn
+  PreAuthenticationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Ref: PreAuthenticationFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+        - WiseUniUserPool
+        - Arn
+  CustomMessagePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Ref: CustomMessageFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+        - WiseUniUserPool
+        - Arn
+  HomeworkBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: ${ProjectName}-homework-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      CorsConfiguration:
+        CorsRules:
+        - AllowedHeaders:
+          - '*'
+          AllowedMethods:
+          - GET
+          - PUT
+          - POST
+          AllowedOrigins:
+          - http://localhost:3000
+          - Fn::Sub: https://app.${ProjectName}.com
+          MaxAge: 3600
+  GradesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Fn::Sub: ${ProjectName}-grades-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: studentId
+        AttributeType: S
+      - AttributeName: course
+        AttributeType: S
+      KeySchema:
+      - AttributeName: studentId
+        KeyType: HASH
+      - AttributeName: course
+        KeyType: RANGE
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+Outputs:
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value:
+      Ref: WiseUniUserPool
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-UserPoolId-${Environment}
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value:
+      Ref: WiseUniUserPoolClient
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-UserPoolClientId-${Environment}
+  UserPoolDomain:
+    Description: Cognito Hosted UI Domain
+    Value:
+      Fn::Sub: ${ProjectName}-students-${Environment}-${AWS::AccountId}
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-UserPoolDomain-${Environment}
+  HostedUILoginURL:
+    Description: Hosted UI Login URL
+    Value:
+      Fn::Sub: https://${ProjectName}-students-${Environment}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${WiseUniUserPoolClient}&response_type=code&scope=email+openid+profile&redirect_uri=http://localhost:3000/callback
+  IdentityPoolId:
+    Description: Cognito Identity Pool ID
+    Value:
+      Ref: WiseUniIdentityPool
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-IdentityPoolId-${Environment}
+  HomeworkBucketName:
+    Description: S3 Bucket for homework uploads
+    Value:
+      Ref: HomeworkBucket
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-HomeworkBucket-${Environment}
+  GradesTableName:
+    Description: DynamoDB table for student grades
+    Value:
+      Ref: GradesTable
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-GradesTable-${Environment}
+  AuthenticatedRoleArn:
+    Description: IAM Role ARN for authenticated users
+    Value:
+      Fn::GetAtt:
+      - CognitoAuthenticatedRole
+      - Arn
+  UnauthenticatedRoleArn:
+    Description: IAM Role ARN for guest users
+    Value:
+      Fn::GetAtt:
+      - CognitoUnauthenticatedRole
+      - Arn

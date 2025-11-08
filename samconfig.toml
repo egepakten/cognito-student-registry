@@ -1,0 +1,65 @@
+version = 0.1
+
+[default]
+[default.global.parameters]
+stack_name = "wiseuni-cognito-stack"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.validate.parameters]
+lint = true
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+confirm_changeset = true
+resolve_s3 = true
+s3_prefix = "wiseuni-cognito-stack"
+region = "us-east-1"
+image_repositories = []
+parameter_overrides = [
+    "ProjectName=wiseuni",
+    "Environment=dev"
+]
+disable_rollback = true
+
+[default.package.parameters]
+resolve_s3 = true
+
+[default.sync.parameters]
+watch = true
+
+[default.local_start_api.parameters]
+warm_containers = "EAGER"
+
+[default.local_start_lambda.parameters]
+warm_containers = "EAGER"
+
+# Production Environment
+[prod]
+[prod.deploy.parameters]
+stack_name = "wiseuni-cognito-stack-prod"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+s3_prefix = "wiseuni-cognito-prod"
+region = "us-east-1"
+parameter_overrides = [
+    "ProjectName=wiseuni",
+    "Environment=prod"
+]
+
+# Staging Environment
+[staging]
+[staging.deploy.parameters]
+stack_name = "wiseuni-cognito-stack-staging"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+s3_prefix = "wiseuni-cognito-staging"
+region = "us-east-1"
+parameter_overrides = [
+    "ProjectName=wiseuni",
+    "Environment=staging"
+]
