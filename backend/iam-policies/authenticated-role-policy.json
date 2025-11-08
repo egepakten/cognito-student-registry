@@ -1,0 +1,37 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3AccessOwnFolder",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::wiseuni-homework-bucket"],
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": ["${cognito-identity.amazonaws.com:sub}/*"]
+        }
+      }
+    },
+    {
+      "Sid": "S3UploadDownloadOwnFiles",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": [
+        "arn:aws:s3:::wiseuni-homework-bucket/${cognito-identity.amazonaws.com:sub}/*"
+      ]
+    },
+    {
+      "Sid": "DynamoDBAccessOwnGrades",
+      "Effect": "Allow",
+      "Action": ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:ACCOUNT_ID:table/student-grades-table"
+      ],
+      "Condition": {
+        "ForAllValues:StringEquals": {
+          "dynamodb:LeadingKeys": ["${cognito-identity.amazonaws.com:sub}"]
+        }
+      }
+    }
+  ]
+}

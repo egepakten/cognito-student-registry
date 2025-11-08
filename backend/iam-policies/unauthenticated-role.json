@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "GuestReadPublicCatalog",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject"],
+      "Resource": ["arn:aws:s3:::wiseuni-homework-bucket/public/*"]
+    },
+    {
+      "Sid": "GuestListPublicCatalog",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::wiseuni-homework-bucket"],
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": ["public/*"]
+        }
+      }
+    }
+  ]
+}

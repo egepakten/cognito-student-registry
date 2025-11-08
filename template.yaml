@@ -1,0 +1,486 @@
+# template.yaml
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: WiseUni Cognito Learning Project - Complete Infrastructure
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: wiseuni
+    Description: Project name prefix for resources
+
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.11
+    MemorySize: 256
+    Environment:
+      Variables:
+        LOG_LEVEL: INFO
+
+Resources:
+  # ============================================================================
+  # Slide 1, 2: Cognito User Pool
+  # ============================================================================
+
+  WiseUniUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${ProjectName}-user-pool-${Environment}
+
+      # Slide 2: Username/Email configuration
+      UsernameAttributes:
+        - email
+      UsernameConfiguration:
+        CaseSensitive: false
+
+      # Slide 2: Password policy
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          TemporaryPasswordValidityDays: 7
+
+      # Slide 2: Email verification
+      AutoVerifiedAttributes:
+        - email
+
+      # Slide 2: MFA configuration (optional)
+      MfaConfiguration: OPTIONAL
+      EnabledMfas:
+        - SOFTWARE_TOKEN_MFA
+
+      # Slide 2: Email configuration
+      EmailConfiguration:
+        EmailSendingAccount: COGNITO_DEFAULT
+
+      # Slide 2: Account recovery
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+
+      # Slide 2: User attributes
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+          Mutable: false
+        - Name: name
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+        - Name: student_id
+          AttributeDataType: String
+          Mutable: true
+
+      # Slide 5: Lambda Triggers
+      LambdaConfig:
+        PreSignUp: !GetAtt PreSignupFunction.Arn
+        PostConfirmation: !GetAtt PostConfirmationFunction.Arn
+        PreAuthentication: !GetAtt PreAuthenticationFunction.Arn
+        CustomMessage: !GetAtt CustomMessageFunction.Arn
+
+      # Slide 8: Advanced security (adaptive authentication)
+      UserPoolAddOns:
+        AdvancedSecurityMode: ENFORCED
+
+  # ============================================================================
+  # Slide 6: User Pool Domain (for Hosted UI)
+  # ============================================================================
+
+  WiseUniUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub ${ProjectName}-students-${Environment}-${AWS::AccountId}
+      UserPoolId: !Ref WiseUniUserPool
+
+  # ============================================================================
+  # Slide 6: User Pool Client (App Client)
+  # ============================================================================
+
+  WiseUniUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub ${ProjectName}-web-client-${Environment}
+      UserPoolId: !Ref WiseUniUserPool
+
+      # Slide 6, 12: OAuth configuration for Hosted UI
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+
+      # Slide 12: Callback URLs
+      CallbackURLs:
+        - http://localhost:3000/callback
+        - !Sub https://app.${ProjectName}.com/callback
+
+      LogoutURLs:
+        - http://localhost:3000/
+        - !Sub https://app.${ProjectName}.com/
+
+      # Slide 3, 6: Supported identity providers
+      SupportedIdentityProviders:
+        - COGNITO
+
+      # Token validity
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+
+      # Slide 9: Return ID token (required)
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+
+      # Prevent client secret (for web apps)
+      GenerateSecret: false
+
+      # Read/write attributes
+      ReadAttributes:
+        - email
+        - name
+        - email_verified
+      WriteAttributes:
+        - name
+
+  # ============================================================================
+  # Slide 15-17: Cognito Identity Pool
+  # ============================================================================
+
+  WiseUniIdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: !Sub ${ProjectName}_identity_pool_${Environment}
+      AllowUnauthenticatedIdentities: true # Slide 19: Guest access
+
+      # Slide 17: Link to User Pool
+      CognitoIdentityProviders:
+        - ClientId: !Ref WiseUniUserPoolClient
+          ProviderName: !GetAtt WiseUniUserPool.ProviderName
+
+  # ============================================================================
+  # Slide 18: IAM Roles for Identity Pool
+  # ============================================================================
+
+  # Authenticated user role
+  CognitoAuthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-authenticated-role-${Environment}
+
+      # Slide 18: Trust policy - Cognito Identity Pools can assume this role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref WiseUniIdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+
+      # Slide 20, 21: Policies with policy variables
+      Policies:
+        - PolicyName: AuthenticatedUserPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Slide 20: S3 access - list own folder
+              - Sid: ListOwnFolder
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt HomeworkBucket.Arn
+                Condition:
+                  StringLike:
+                    s3:prefix:
+                      - ${cognito-identity.amazonaws.com:sub}/*
+
+              # Slide 20: S3 access - upload/download own files
+              - Sid: AccessOwnFiles
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub ${HomeworkBucket.Arn}/$${cognito-identity.amazonaws.com:sub}/*
+
+              # Slide 21: DynamoDB access - query own grades
+              - Sid: QueryOwnGrades
+                Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt GradesTable.Arn
+                Condition:
+                  ForAllValues:StringEquals:
+                    dynamodb:LeadingKeys:
+                      - ${cognito-identity.amazonaws.com:sub}
+
+  # Unauthenticated (guest) user role
+  CognitoUnauthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-unauthenticated-role-${Environment}
+
+      # Slide 18: Trust policy for guests
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref WiseUniIdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: unauthenticated
+
+      # Slide 19: Guest user policy - very limited access
+      Policies:
+        - PolicyName: UnauthenticatedUserPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Slide 19: Guests can only read public folder
+              - Sid: ReadPublicCatalog
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub ${HomeworkBucket.Arn}/public/*
+
+              - Sid: ListPublicCatalog
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt HomeworkBucket.Arn
+                Condition:
+                  StringLike:
+                    s3:prefix:
+                      - public/*
+
+  # Attach roles to Identity Pool
+  IdentityPoolRoleAttachment:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref WiseUniIdentityPool
+      Roles:
+        authenticated: !GetAtt CognitoAuthenticatedRole.Arn
+        unauthenticated: !GetAtt CognitoUnauthenticatedRole.Arn
+
+  # ============================================================================
+  # Slide 5: Lambda Functions (Triggers)
+  # ============================================================================
+
+  PreSignupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-pre-signup-${Environment}
+      CodeUri: backend/lambda/pre_signup/
+      Handler: index.handler
+      Description: Slide 5 - Validates email domain before signup
+
+  PostConfirmationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-post-confirmation-${Environment}
+      CodeUri: backend/lambda/post_confirmation/
+      Handler: index.handler
+      Description: Slide 5 - Sends welcome email after confirmation
+      Policies:
+        - SESCrudPolicy:
+            IdentityName: noreply@wiseuni.com
+
+  PreAuthenticationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-pre-authentication-${Environment}
+      CodeUri: backend/lambda/pre_authentication/
+      Handler: index.handler
+      Description: Slide 5 - Validates login during semester only
+
+  CustomMessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-custom-message-${Environment}
+      CodeUri: backend/lambda/custom_message/
+      Handler: index.handler
+      Description: Slide 5 - Customizes verification emails
+
+  # Lambda permissions for Cognito to invoke
+  PreSignupPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PreSignupFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt WiseUniUserPool.Arn
+
+  PostConfirmationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PostConfirmationFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt WiseUniUserPool.Arn
+
+  PreAuthenticationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PreAuthenticationFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt WiseUniUserPool.Arn
+
+  CustomMessagePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CustomMessageFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt WiseUniUserPool.Arn
+
+  # ============================================================================
+  # Slide 20: S3 Bucket for Homework
+  # ============================================================================
+
+  HomeworkBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectName}-homework-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+            AllowedOrigins:
+              - http://localhost:3000
+              - !Sub https://app.${ProjectName}.com
+            MaxAge: 3600
+
+  # ============================================================================
+  # Slide 21: DynamoDB Table for Grades
+  # ============================================================================
+
+  GradesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${ProjectName}-grades-${Environment}
+      BillingMode: PAY_PER_REQUEST
+
+      # Slide 21: Partition key must match user ID
+      AttributeDefinitions:
+        - AttributeName: studentId
+          AttributeType: S
+        - AttributeName: course
+          AttributeType: S
+
+      KeySchema:
+        - AttributeName: studentId
+          KeyType: HASH # Partition key
+        - AttributeName: course
+          KeyType: RANGE # Sort key
+
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+# ============================================================================
+# Outputs
+# ============================================================================
+
+Outputs:
+  # Slide 2, 6: User Pool information
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref WiseUniUserPool
+    Export:
+      Name: !Sub ${ProjectName}-UserPoolId-${Environment}
+
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref WiseUniUserPoolClient
+    Export:
+      Name: !Sub ${ProjectName}-UserPoolClientId-${Environment}
+
+  UserPoolDomain:
+    Description: Cognito Hosted UI Domain
+    Value: !Sub ${ProjectName}-students-${Environment}-${AWS::AccountId}
+    Export:
+      Name: !Sub ${ProjectName}-UserPoolDomain-${Environment}
+
+  # Slide 6: Hosted UI URLs
+  HostedUILoginURL:
+    Description: Hosted UI Login URL
+    Value: !Sub https://${ProjectName}-students-${Environment}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${WiseUniUserPoolClient}&response_type=code&scope=email+openid+profile&redirect_uri=http://localhost:3000/callback
+
+  # Slide 15-17: Identity Pool information
+  IdentityPoolId:
+    Description: Cognito Identity Pool ID
+    Value: !Ref WiseUniIdentityPool
+    Export:
+      Name: !Sub ${ProjectName}-IdentityPoolId-${Environment}
+
+  # Slide 20: S3 Bucket
+  HomeworkBucketName:
+    Description: S3 Bucket for homework uploads
+    Value: !Ref HomeworkBucket
+    Export:
+      Name: !Sub ${ProjectName}-HomeworkBucket-${Environment}
+
+  # Slide 21: DynamoDB Table
+  GradesTableName:
+    Description: DynamoDB table for student grades
+    Value: !Ref GradesTable
+    Export:
+      Name: !Sub ${ProjectName}-GradesTable-${Environment}
+
+  # IAM Roles
+  AuthenticatedRoleArn:
+    Description: IAM Role ARN for authenticated users
+    Value: !GetAtt CognitoAuthenticatedRole.Arn
+
+  UnauthenticatedRoleArn:
+    Description: IAM Role ARN for guest users
+    Value: !GetAtt CognitoUnauthenticatedRole.Arn
