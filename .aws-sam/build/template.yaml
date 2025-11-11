@@ -285,7 +285,7 @@ Resources:
       Description: Sends welcome email after confirmation
       Policies:
       - SESCrudPolicy:
-          IdentityName: egepakten@icloud.com
+          IdentityName: wiseuni.co.uk
     Metadata:
       SamResourceId: PostConfirmationFunction
   PreAuthenticationFunction:
