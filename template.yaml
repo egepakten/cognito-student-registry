@@ -332,7 +332,7 @@ Resources:
       Description: Sends welcome email after confirmation
       Policies:
         - SESCrudPolicy:
-            IdentityName: egepakten@icloud.com
+            IdentityName: wiseuni.co.uk # Verified domain in SES
 
   PreAuthenticationFunction:
     Type: AWS::Serverless::Function

@@ -105,34 +105,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Next Steps */}
-        <div className="next-steps">
-          <h2>📋 Next Steps</h2>
-          <div className="step">
-            <span className="check">✅</span>
-            <span>Backend deployed successfully</span>
-          </div>
-          <div className="step">
-            <span className="check">✅</span>
-            <span>Frontend configuration loaded</span>
-          </div>
-          <div className="step">
-            <span className="check">⬜</span>
-            <span>Customize Hosted UI (AWS Console)</span>
-          </div>
-          <div className="step">
-            <span className="check">⬜</span>
-            <span>Set up Amazon SES for emails</span>
-          </div>
-          <div className="step">
-            <span className="check">⬜</span>
-            <span>Test user signup and login</span>
-          </div>
-          <div className="step">
-            <span className="check">⬜</span>
-            <span>Build frontend components</span>
-          </div>
-        </div>
+
+        
       </div>
     </div>
   );
