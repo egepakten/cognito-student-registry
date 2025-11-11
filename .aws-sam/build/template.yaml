@@ -373,6 +373,7 @@ Resources:
           - PUT
           - POST
           AllowedOrigins:
+          - http://localhost:5173
           - http://localhost:3000
           - Fn::Sub: https://app.${ProjectName}.com
           MaxAge: 3600
@@ -419,7 +420,7 @@ Outputs:
   HostedUILoginURL:
     Description: Hosted UI Login URL
     Value:
-      Fn::Sub: https://${ProjectName}-students-${Environment}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${WiseUniUserPoolClient}&response_type=code&scope=email+openid+profile&redirect_uri=http://localhost:3000/callback
+      Fn::Sub: https://${ProjectName}-students-${Environment}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${WiseUniUserPoolClient}&response_type=code&scope=email+openid+profile&redirect_uri=http://localhost:5173/callback
   IdentityPoolId:
     Description: Cognito Identity Pool ID
     Value:

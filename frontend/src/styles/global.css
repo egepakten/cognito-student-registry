@@ -1,4 +1,5 @@
-/* Global styles for WiseUni Student Portal */
+/* frontend/src/styles/global.css */
+/* WiseUni Student Portal - Global Styles */
 
 * {
   margin: 0;
@@ -12,10 +13,15 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #d2ecf4 0%, 
+  #ffffff 100%);
   min-height: 100vh;
   padding: 20px;
 }
+
+/* ============================================================================
+   App Container
+   ============================================================================ */
 
 .app {
   max-width: 1200px;
@@ -28,6 +34,10 @@ body {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 }
+
+/* ============================================================================
+   Header Section
+   ============================================================================ */
 
 .header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -42,39 +52,16 @@ body {
   font-weight: 700;
 }
 
-.subtitle {
+.header p {
   font-size: 1.2rem;
   opacity: 0.9;
 }
 
-.card {
-  padding: 30px;
-  border-bottom: 1px solid #e2e8f0;
-}
+/* ============================================================================
+   Configuration Toggle Button
+   ============================================================================ */
 
-.card:last-child {
-  border-bottom: none;
-}
-
-.card h2 {
-  color: #2d3748;
-  margin-bottom: 20px;
-  font-size: 1.8rem;
-}
-
-.card h3 {
-  color: #4a5568;
-  margin-bottom: 15px;
-  font-size: 1.3rem;
-}
-
-.card p {
-  color: #718096;
-  line-height: 1.6;
-  margin-bottom: 15px;
-}
-
-.btn-primary {
+.config-toggle {
   background: #667eea;
   color: white;
   border: none;
@@ -83,37 +70,100 @@ body {
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
   transition: all 0.3s ease;
+  margin: 20px;
+  display: block;
+  width: calc(100% - 40px);
 }
 
-.btn-primary:hover {
+.config-toggle:hover {
   background: #5568d3;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.btn-secondary {
-  background: white;
-  color: #667eea;
-  border: 2px solid #667eea;
-  padding: 12px 24px;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 6px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-  transition: all 0.3s ease;
+/* ============================================================================
+   Configuration Display
+   ============================================================================ */
+
+.config-display {
+  background: #f7fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 0 20px 20px 20px;
 }
 
-.btn-secondary:hover {
-  background: #667eea;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+.config-display h2 {
+  color: #2d3748;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
 }
+
+.config-section {
+  margin-bottom: 25px;
+}
+
+.config-section:last-child {
+  margin-bottom: 0;
+}
+
+.config-section h3 {
+  color: #4a5568;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.config-item {
+  padding: 10px 0;
+  display: flex;
+  gap: 15px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 14px;
+}
+
+.config-item:last-child {
+  border-bottom: none;
+}
+
+.config-item .label {
+  color: #667eea;
+  font-weight: 600;
+  min-width: 150px;
+}
+
+.config-item .value {
+  color: #2d3748;
+  font-family: 'Courier New', monospace;
+  word-break: break-all;
+}
+
+/* ============================================================================
+   Hosted UI Section
+   ============================================================================ */
+
+.hosted-ui-section {
+  padding: 30px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.hosted-ui-section h2 {
+  color: #2d3748;
+  margin-bottom: 15px;
+  font-size: 1.8rem;
+}
+
+.hosted-ui-section .description {
+  color: #718096;
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+}
+
+/* ============================================================================
+   Button Group
+   ============================================================================ */
 
 .button-group {
   display: flex;
@@ -122,36 +172,46 @@ body {
   flex-wrap: wrap;
 }
 
-.config-display {
-  background: #f7fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 20px;
-  margin-top: 20px;
-}
-
-.config-display ul {
-  list-style: none;
-  padding: 0;
-}
-
-.config-display li {
-  padding: 10px 0;
-  border-bottom: 1px solid #e2e8f0;
-  color: #2d3748;
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-}
-
-.config-display li:last-child {
-  border-bottom: none;
-}
-
-.config-display strong {
-  color: #667eea;
+.button {
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
   display: inline-block;
-  min-width: 150px;
+  transition: all 0.3s ease;
+  text-align: center;
+  border: none;
 }
+
+.button.primary {
+  background: #667eea;
+  color: white;
+}
+
+.button.primary:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.button.secondary {
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.button.secondary:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* ============================================================================
+   Info Box
+   ============================================================================ */
 
 .info-box {
   background: #ebf4ff;
@@ -167,46 +227,131 @@ body {
   font-size: 14px;
 }
 
+.info-box p:last-child {
+  margin-bottom: 0;
+}
+
+.info-box strong {
+  font-weight: 600;
+}
+
 .info-box code {
   background: #2d3748;
   color: #48bb78;
   padding: 2px 6px;
   border-radius: 3px;
   font-size: 13px;
+  font-family: 'Courier New', monospace;
 }
 
-.steps-list {
-  list-style: none;
-  padding: 0;
+/* ============================================================================
+   Next Steps Section
+   ============================================================================ */
+
+.next-steps {
+  padding: 30px;
+  border-top: 1px solid #e2e8f0;
 }
 
-.steps-list li {
+.next-steps h2 {
+  color: #2d3748;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 15px;
   padding: 12px 0;
   color: #2d3748;
   font-size: 16px;
   border-bottom: 1px solid #e2e8f0;
 }
 
-.steps-list li:last-child {
+.step:last-child {
   border-bottom: none;
 }
 
+.check {
+  font-size: 20px;
+  min-width: 30px;
+}
+
+/* ============================================================================
+   Responsive Design
+   ============================================================================ */
+
 @media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+
+  .header {
+    padding: 30px 20px;
+  }
+
   .header h1 {
     font-size: 2rem;
   }
-  
-  .card {
-    padding: 20px;
+
+  .header p {
+    font-size: 1rem;
   }
-  
+
+  .config-toggle {
+    margin: 15px;
+    width: calc(100% - 30px);
+  }
+
+  .config-display {
+    margin: 0 15px 15px 15px;
+    padding: 15px;
+  }
+
+  .config-display h2 {
+    font-size: 1.5rem;
+  }
+
+  .config-section h3 {
+    font-size: 1.1rem;
+  }
+
+  .config-item {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .config-item .label {
+    min-width: auto;
+  }
+
+  .hosted-ui-section,
+  .next-steps {
+    padding: 20px 15px;
+  }
+
   .button-group {
     flex-direction: column;
   }
-  
-  .btn-primary,
-  .btn-secondary {
+
+  .button {
     width: 100%;
-    text-align: center;
+  }
+
+  .step {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .config-display h2,
+  .hosted-ui-section h2,
+  .next-steps h2 {
+    font-size: 1.3rem;
   }
 }

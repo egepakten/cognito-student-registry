@@ -12,7 +12,7 @@
  * 4. Redirect to dashboard
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState,useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { cognitoConfig } from '../config/cognito';
 
@@ -24,7 +24,14 @@ export default function Callback() {
   const [status, setStatus] = useState<CallbackStatus>('loading');
   const [error, setError] = useState<string>('');
 
+  const hasRun = useRef(false); // To prevent double execution in Strict Mode
+
+
   useEffect(() => {
+    //  Only run once, even in StrictMode
+    if (hasRun.current) return;
+    hasRun.current = true;
+    
     handleCallback();
   });
 
