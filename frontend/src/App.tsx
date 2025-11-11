@@ -14,7 +14,7 @@
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
-import Callback from './components/Callback';
+import Callback from './components/Callback/Callback';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Signup from './components/Signup';

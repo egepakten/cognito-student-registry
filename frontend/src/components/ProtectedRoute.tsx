@@ -1,4 +1,3 @@
-// frontend/src/components/ProtectedRoute.tsx
 /**
  * Protected Route Component
  * 
