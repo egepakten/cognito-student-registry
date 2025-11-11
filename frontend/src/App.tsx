@@ -17,7 +17,7 @@ import Home from './pages/Home';
 import Callback from './components/Callback/Callback';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
-import Signup from './components/Signup';
+import Signup from './components/SignUp/Signup';
 import UploadHomework from './components/UploadHomework';
 import ViewGrades from './components/ViewGrades';
 import ProtectedRoute from './components/ProtectedRoute';
