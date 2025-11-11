@@ -11,8 +11,35 @@ import { cognitoConfig, getHostedUIUrls } from '../config/cognito';
 import '../styles/global.css';
 
 export default function Home() {
+  const [showDescription, setShowDescription] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+  const [isClosingDescription, setIsClosingDescription] = useState(false);
+  const [isClosingConfig, setIsClosingConfig] = useState(false);
   const hostedUIUrls = getHostedUIUrls();
+
+  const handleDescriptionToggle = () => {
+    if (showDescription) {
+      setIsClosingDescription(true);
+      setTimeout(() => {
+        setShowDescription(false);
+        setIsClosingDescription(false);
+      }, 300);
+    } else {
+      setShowDescription(true);
+    }
+  };
+
+  const handleConfigToggle = () => {
+    if (showConfig) {
+      setIsClosingConfig(true);
+      setTimeout(() => {
+        setShowConfig(false);
+        setIsClosingConfig(false);
+      }, 300);
+    } else {
+      setShowConfig(true);
+    }
+  };
 
   return (
     <div className="app">
@@ -23,17 +50,54 @@ export default function Home() {
           <p>AWS Cognito Integration Demo</p>
         </header>
 
+        {/* Description Toggle */}
+        <button 
+          onClick={handleDescriptionToggle}
+          className="description-toggle"
+        >
+          {showDescription ? 'Hide' : 'Show'} Project Description
+        </button>
+
+        {/* Description Display */}
+        {(showDescription || isClosingDescription) && (
+          <div className={`description-display ${isClosingDescription ? 'closing' : ''}`}>
+            <h2>📚 About This Project</h2>
+            <p>
+              This project is a comprehensive learning demonstration of AWS Cognito integration. 
+              The purpose is to explore and showcase knowledge of Cognito's authentication and 
+              authorization capabilities through a practical student registry application.
+            </p>
+            <p>
+              The application implements a role-based access control system where different user 
+              types have distinct interfaces and permissions:
+            </p>
+            <ul>
+              <li><strong>Students:</strong> Have access to their own student dashboard with 
+              personalized views and limited permissions.</li>
+              <li><strong>Professors:</strong> Have access to a professor dashboard with 
+              enhanced permissions for managing courses and student data.</li>
+              <li><strong>Guest Access:</strong> Provides limited read-only access for 
+              unauthenticated users to explore public information.</li>
+            </ul>
+            <p>
+              This implementation demonstrates various Cognito features including user pools, 
+              identity pools, hosted UI, role-based access control, and integration with AWS 
+              services like S3 and DynamoDB.
+            </p>
+          </div>
+        )}
+
         {/* Configuration Toggle */}
         <button 
-          onClick={() => setShowConfig(!showConfig)}
+          onClick={handleConfigToggle}
           className="config-toggle"
         >
           {showConfig ? 'Hide' : 'Show'} Configuration
         </button>
 
         {/* Configuration Display */}
-        {showConfig && (
-          <div className="config-display">
+        {(showConfig || isClosingConfig) && (
+          <div className={`config-display ${isClosingConfig ? 'closing' : ''}`}>
             <h2>📋 AWS Configuration</h2>
             
             <div className="config-section">
