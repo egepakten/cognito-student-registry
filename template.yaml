@@ -130,10 +130,12 @@ Resources:
 
       # Callback URLs
       CallbackURLs:
-        - http://localhost:3000/callback
+        - http://localhost:5173/callback  # Vite default port
+        - http://localhost:3000/callback 
         - !Sub https://app.${ProjectName}.com/callback
 
       LogoutURLs:
+        - http://localhost:5173/  # Vite default port
         - http://localhost:3000/
         - !Sub https://app.${ProjectName}.com/
 

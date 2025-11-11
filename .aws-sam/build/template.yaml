@@ -104,9 +104,11 @@ Resources:
       - profile
       AllowedOAuthFlowsUserPoolClient: true
       CallbackURLs:
+      - http://localhost:5173/callback
       - http://localhost:3000/callback
       - Fn::Sub: https://app.${ProjectName}.com/callback
       LogoutURLs:
+      - http://localhost:5173/
       - http://localhost:3000/
       - Fn::Sub: https://app.${ProjectName}.com/
       SupportedIdentityProviders:
