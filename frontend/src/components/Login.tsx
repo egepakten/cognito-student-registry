@@ -1,4 +1,3 @@
-// frontend/src/components/Login.tsx
 /**
  * Custom Login Component
  * 
@@ -27,15 +26,12 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // ============================================================================
-  // HANDLE LOGIN
-  // ============================================================================
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
+    // SUCCESS PATH - Attempt login
     try {
       console.log('🔐 Attempting login for:', email);
       
@@ -46,21 +42,73 @@ export default function Login() {
         hasAccessToken: !!tokens.accessToken,
         hasIdToken: !!tokens.idToken,
       });
-      
-      // Store tokens
+      /*
+        Store Access Token | Used for: API authorization
+         Example: When user uploads homework, send this token
+         Server checks: "Is this token valid? OK, allow upload."
+      */
       localStorage.setItem('accessToken', tokens.accessToken);
+      /* 
+        Store ID Token | Contains: User information (email, name, user ID)
+         Used for: Displaying user profile, personalization
+         Example: "Welcome back, John!"
+      */
       localStorage.setItem('idToken', tokens.idToken);
+      /**
+        Store Refresh Token
+         
+         Used for: Getting new tokens when they expire
+         Access/ID tokens expire after 1 hour
+         Refresh token valid for 30 days
+         
+         Flow:
+         1. Access token expires
+         2. Use refresh token to get new access token
+         3. User stays logged in without re-entering password
+       */
       localStorage.setItem('refreshToken', tokens.refreshToken);
       
       // Decode and store user info
+      /**
+        JWT Structure:
+        
+        JWT = header.payload.signature
+        Example: eyJhbGc.eyJzdWI.SflKxw
+                    ↑       ↑       ↑
+                 Header  Payload Signature
+        
+        All 3 parts are Base64-encoded
+        We want to decode the PAYLOAD (middle part)
+        
+        Payload contains:
+        - sub: User ID (UUID)
+        - email: User's email
+        - name: User's name
+        - exp: Expiration timestamp
+        - iat: Issued at timestamp
+      */
+      // Split JWT and get payload (middle part)
       const base64Url = tokens.idToken.split('.')[1];
+      // Convert URL-safe Base64 to standard Base64
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      // Decode Base64 to JSON string (complex but important!)
+      // Final result: JSON string | Example: '{"sub":"123","email":"john@example.com","name":"John"}'
       const jsonPayload = decodeURIComponent(
         atob(base64)
           .split('')
           .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
           .join('')
       );
+      /**
+        Parse JSON string to JavaScript object
+        
+        JSON.parse(): Converts JSON string to object
+        
+        Input: '{"sub":"123","email":"john@example.com"}'
+        Output: { sub: "123", email: "john@example.com" }
+        
+        Now we can access: userInfo.email, userInfo.sub, etc.
+       */
       const userInfo = JSON.parse(jsonPayload);
       localStorage.setItem('userInfo', JSON.stringify(userInfo));
       
@@ -95,10 +143,6 @@ export default function Login() {
       setLoading(false);
     }
   };
-
-  // ============================================================================
-  // RENDER
-  // ============================================================================
 
   return (
     <div className="auth-container">
