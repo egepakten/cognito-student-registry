@@ -1,4 +1,3 @@
-// frontend/src/components/Login.tsx
 /**
  * Custom Login Component
  * Alternative to Hosted UI

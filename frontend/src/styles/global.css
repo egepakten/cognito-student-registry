@@ -22,6 +22,76 @@ body {
 }
 
 /* ============================================================================
+   Authentication Options Container
+   ============================================================================ */
+
+.auth-options-container {
+  padding: 30px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* ============================================================================
+   Custom Authentication Section
+   ============================================================================ */
+
+.custom-auth-section {
+  padding: 30px;
+  background: #f7fafc;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+}
+
+.custom-auth-section h2 {
+  color: #2d3748;
+  margin-bottom: 15px;
+  font-size: 1.8rem;
+}
+
+.custom-auth-section .description {
+  color: #718096;
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+}
+
+/* ============================================================================
+   Comparison Section
+   ============================================================================ */
+
+.comparison-section {
+  padding: 30px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 20px;
+}
+
+.comparison-section table {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================================================
+   Responsive Updates
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .auth-options-container,
+  .custom-auth-section,
+  .comparison-section {
+    padding: 20px 15px;
+  }
+
+  .comparison-section table {
+    font-size: 12px;
+  }
+
+  .comparison-section th,
+  .comparison-section td {
+    padding: 8px !important;
+  }
+}
+
+/* ============================================================================
    App Container
    ============================================================================ */
 
