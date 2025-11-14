@@ -1,4 +1,3 @@
-// frontend/src/services/cognitoService/index.ts
 /**
  * Cognito Service Entry Point
  * 
@@ -17,8 +16,4 @@ export {
   logout,
   getCurrentUser,
   
-  // Types
-  type SignUpParams,
-  type LoginParams,
-  type AuthTokens,
 } from './authService';

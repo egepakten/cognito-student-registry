@@ -14,6 +14,7 @@ import {
   ISignUpResult,
 } from 'amazon-cognito-identity-js';
 import { cognitoConfig } from '../../config/cognito';
+import { SignUpParams, LoginParams, AuthTokens } from '../../types/cognitoService.types';
 
 // ============================================================================
 // USER POOL INSTANCE
@@ -23,31 +24,6 @@ const userPool = new CognitoUserPool({
   UserPoolId: cognitoConfig.userPoolId,
   ClientId: cognitoConfig.userPoolClientId,
 });
-
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
-
-export interface SignUpParams {
-  email: string;
-  password: string;
-  name: string;
-}
-
-export interface LoginParams {
-  email: string;
-  password: string;
-}
-
-export interface AuthTokens {
-  accessToken: string;
-  idToken: string;
-  refreshToken: string;
-}
-
-// ============================================================================
-// SIGN UP
-// ============================================================================
 
 export const signUp = async ({ 
   email, 
@@ -73,10 +49,6 @@ export const signUp = async ({
   });
 };
 
-// ============================================================================
-// VERIFY EMAIL
-// ============================================================================
-
 export const verifyEmail = async (
   email: string, 
   code: string
@@ -100,24 +72,31 @@ export const verifyEmail = async (
   });
 };
 
-// ============================================================================
-// LOGIN
-// ============================================================================
 
 export const login = async ({ 
   email, 
   password 
 }: LoginParams): Promise<AuthTokens> => {
+    console.log('🔐 Login attempt:', {
+    email,
+    poolId: cognitoConfig.userPoolId,
+    clientId: cognitoConfig.userPoolClientId,
+  });
+  
   return new Promise((resolve, reject) => {
     const authenticationDetails = new AuthenticationDetails({
       Username: email,
       Password: password,
     });
 
+    console.log('👤 Creating CognitoUser...');
+
     const cognitoUser = new CognitoUser({
       Username: email,
       Pool: userPool,
     });
+
+    console.log('🔑 Authenticating...');
 
     cognitoUser.authenticateUser(authenticationDetails, {
       onSuccess: (session: CognitoUserSession) => {
@@ -128,21 +107,29 @@ export const login = async ({
           idToken: session.getIdToken().getJwtToken(),
           refreshToken: session.getRefreshToken().getToken(),
         };
+
+        console.log('✅ Tokens received:', {
+          hasAccessToken: !!tokens.accessToken,
+          hasIdToken: !!tokens.idToken,
+          hasRefreshToken: !!tokens.refreshToken,
+        });
         
         resolve(tokens);
       },
       
       onFailure: (err) => {
         console.error('❌ Login error:', err);
+        console.error('❌ Error details:', {
+          code: err.code,
+          name: err.name,
+          message: err.message,
+        });
         reject(err);
       },
     });
   });
 };
 
-// ============================================================================
-// RESEND VERIFICATION CODE
-// ============================================================================
 
 export const resendVerificationCode = async (email: string): Promise<void> => {
   return new Promise((resolve, reject) => {
