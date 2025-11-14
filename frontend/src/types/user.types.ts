@@ -1,4 +1,3 @@
-// frontend/src/types/user.types.ts
 /**
  * User types from Cognito JWT tokens
  */

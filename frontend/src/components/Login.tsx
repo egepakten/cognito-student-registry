@@ -14,22 +14,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../services/cognitoService'; 
 import '../styles/login.css';
-
-interface CognitoError extends Error {
-  code?: string;
-  name: string;
-  message: string;
-}
-
-// Type guard to check if error is CognitoError
-function isCognitoError(error: unknown): error is CognitoError {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    'message' in error
-  );
-}
+import { isCognitoError } from '../utils/errorHandler';
 
 export default function Login() {
   const navigate = useNavigate();
