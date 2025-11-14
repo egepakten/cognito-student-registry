@@ -1,0 +1,102 @@
+/* frontend/src/styles/login.css */
+/**
+ * Login Component Specific Styles
+ * 
+ * Imports: auth.css (shared styles)
+ * 
+ * Additional styling specific to login page:
+ * - Forgot password link positioning
+ * - Social login buttons (future)
+ * - Remember me checkbox (future)
+ */
+
+/* Import shared auth styles */
+@import './auth.css';
+
+/* ============================================================================
+   LOGIN SPECIFIC STYLES
+   ============================================================================ */
+
+.login-forgot-password {
+  text-align: right;
+  margin-bottom: 25px;
+  margin-top: -10px;
+}
+
+.login-forgot-link {
+  background: none;
+  border: none;
+  color: #667eea;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.login-forgot-link:hover {
+  color: #5568d3;
+  text-decoration: underline;
+}
+
+/* ============================================================================
+   REMEMBER ME (Future Feature)
+   ============================================================================ */
+
+.login-remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.login-remember-me input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.login-remember-me label {
+  color: #4a5568;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ============================================================================
+   SOCIAL LOGIN BUTTONS (Future Feature)
+============================================================================ */
+
+.login-social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.login-social-button {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  color: #2d3748;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.login-social-button:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+  transform: translateY(-1px);
+}
+
+.login-social-icon {
+  width: 20px;
+  height: 20px;
+}
