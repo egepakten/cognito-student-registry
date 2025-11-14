@@ -96,7 +96,13 @@ export const login = async ({
       Pool: userPool,
     });
 
+
+    cognitoUser.setAuthenticationFlowType('USER_PASSWORD_AUTH');
+
+    
     console.log('🔑 Authenticating...');
+
+    console.log(cognitoUser);
 
     cognitoUser.authenticateUser(authenticationDetails, {
       onSuccess: (session: CognitoUserSession) => {
