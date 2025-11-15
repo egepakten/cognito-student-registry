@@ -98,6 +98,13 @@ code {
   min-width: 230px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .app-title {
   font-size: clamp(2.1rem, 4vw, 2.9rem);
   font-weight: 800;
@@ -126,6 +133,17 @@ code {
 .info-toggle:hover {
   transform: translateY(-2px);
   box-shadow: 0 18px 45px rgba(255, 126, 139, 0.45);
+}
+
+.info-toggle.secondary {
+  background: white;
+  color: var(--accent);
+  border: 2px solid rgba(255, 126, 139, 0.3);
+  box-shadow: 0 12px 28px rgba(179, 191, 210, 0.4);
+}
+
+.info-toggle.secondary:hover {
+  box-shadow: 0 15px 32px rgba(179, 191, 210, 0.55);
 }
 
 .main-content {

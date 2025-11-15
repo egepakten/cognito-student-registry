@@ -56,19 +56,19 @@ export default function Home() {
             <h1 className="app-title">🎓 WiseUni Student Registry</h1>
             <p className="app-subtitle">AWS Cognito Integration Demo</p>
           </div>
-          <div>
+          <div className="header-actions">
             <button className="info-toggle" onClick={handleDescriptionToggle}>
               {showDescription ? "Hide Info ▲" : "Show Info ▼"}
+            </button>
+            <button
+              className="info-toggle secondary"
+              onClick={handleConfigToggle}
+            >
+              {showConfig ? "Hide Configuration ▲" : "Show Configuration ▼"}
             </button>
           </div>
         </div>
       </header>
-
-      <div className="toggle-buttons-container">
-        <button className="toggle-button" onClick={handleConfigToggle}>
-          {showConfig ? "Hide Configuration ▲" : "Show Configuration ▼"}
-        </button>
-      </div>
 
       <main className="main-content">
         {showDescription && (
