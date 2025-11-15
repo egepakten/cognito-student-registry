@@ -1,17 +1,11 @@
-/* frontend/src/styles/global.css */
-/* WiseUni Student Portal - Global Styles */
+/* =============================================
+   GLOBAL STYLES & RESET
+   ============================================= */
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-}
-
-html {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
 }
 
 body {
@@ -20,12 +14,461 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #2a2a2a 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
   min-height: 100vh;
-  width: 100%;
-  padding: 0;
-  margin: 0;
+  color: #e0e0e0;
+  position: relative;
   overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.05;
+  animation: float 20s ease-in-out infinite;
+  z-index: 0;
+}
+
+body::before {
+  width: 600px;
+  height: 600px;
+  background: linear-gradient(135deg, #ffffff 0%, #cccccc 100%);
+  top: -150px;
+  left: -150px;
+  animation-duration: 15s;
+}
+
+body::after {
+  width: 500px;
+  height: 500px;
+  background: linear-gradient(135deg, #ffffff 0%, #aaaaaa 100%);
+  bottom: -150px;
+  right: -150px;
+  animation-direction: reverse;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(50px, 50px) scale(1.1);
+  }
+  50% {
+    transform: translate(0, 100px) scale(0.9);
+  }
+  75% {
+    transform: translate(-50px, 50px) scale(1.05);
+  }
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
+/* =============================================
+   LIQUID GLASS WRAPPER FIXES
+   ============================================= */
+
+div[class*="LiquidGlass"],
+div[style*="position: relative"] {
+  display: inline-block;
+  width: auto;
+}
+
+.description-display,
+.config-display,
+.hero-section,
+.info-box,
+.header,
+.auth-option {
+  display: block;
+  width: 100%;
+}
+
+.description-display [class*="LiquidGlass"],
+.config-display [class*="LiquidGlass"],
+.hero-section [class*="LiquidGlass"],
+.info-box [class*="LiquidGlass"] {
+  width: 100% !important;
+  display: block !important;
+  cursor: pointer;
+}
+
+.description-display [class*="LiquidGlass"]:hover,
+.config-display [class*="LiquidGlass"]:hover,
+.hero-section [class*="LiquidGlass"]:hover,
+.info-box [class*="LiquidGlass"]:hover {
+  animation: liquidPulse 2s ease-in-out infinite;
+}
+
+@keyframes liquidPulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.05);
+  }
+}
+
+/* =============================================
+   APP CONTAINER
+   ============================================= */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+.container {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+}
+
+/* =============================================
+   HEADER
+   ============================================= */
+
+.header {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  border-radius: 24px;
+  margin-top: 1.5rem;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #8e8b8b 0%, #000000 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+/* =============================================
+   TOGGLE BUTTONS
+   ============================================= */
+
+.toggle-buttons-container {
+  display: flex;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.toggle-button {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  padding: 0.9rem 1.5rem;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.toggle-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.toggle-button:active {
+  transform: translateY(0);
+}
+
+/* =============================================
+   COLLAPSIBLE INFO / CONFIG GLASS PANELS
+   ============================================= */
+
+.description-display,
+.config-display {
+  position: relative;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  animation: slideDown 0.4s ease-out;
+}
+
+.description-display::before,
+.config-display::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 70%
+  );
+  animation: shimmer 6s linear infinite;
+}
+
+.description-display > *,
+.config-display > * {
+  position: relative;
+  z-index: 1;
+}
+
+.description-display h2,
+.config-display h2 {
+  color: #ffffff;
+  font-size: 1.6rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.description-display p,
+.description-display li,
+.config-display p,
+.config-display span {
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.7;
+}
+
+.description-display ul {
+  margin-left: 1rem;
+  margin-bottom: 1rem;
+}
+
+.config-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.config-item:last-child {
+  border-bottom: none;
+}
+
+.config-item .label {
+  min-width: 150px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.config-item .value {
+  font-family: "Courier New", monospace;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+/* =============================================
+   HERO SECTION / OPTIONS
+   ============================================= */
+
+.hero-section {
+  margin-top: 2rem;
+  position: relative;
+}
+
+.hero-content {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  padding: 3rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+.hero-title {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 2rem;
+  font-weight: 700;
+}
+
+.auth-option {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.auth-option h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: #ffffff;
+}
+
+.auth-description {
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 1rem;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.button {
+  padding: 0.9rem 1.8rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  color: #ffffff;
+}
+
+.button.primary {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.button.secondary {
+  background: transparent;
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+}
+
+/* =============================================
+   INFO BOX / NOTES
+   ============================================= */
+
+.info-box {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  border-left: 4px solid rgba(255, 255, 255, 0.35);
+}
+
+.info-box p,
+.info-box li {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.info-box strong {
+  color: #ffffff;
+}
+
+.info-box code {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  color: #ffd966;
+}
+
+/* =============================================
+   RESPONSIVE
+   ============================================= */
+
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 2rem;
+  }
+
+  .hero-content {
+    padding: 2rem;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  .toggle-buttons-container {
+    flex-direction: column;
+  }
 }
 
 /* ============================================================================
