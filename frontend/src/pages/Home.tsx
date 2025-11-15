@@ -50,215 +50,201 @@ export default function Home() {
 
   return (
     <div className="app">
-      <div className="container">
-        {/* Title at Top */}
-        <header className="header">
-          <h1>🎓 WiseUni Student Registry</h1>
-          <p>AWS Cognito Integration Demo</p>
-        </header>
-
-        {/* Two Buttons Side by Side */}
-        <div className="toggle-buttons-container">
-          <button onClick={handleDescriptionToggle} className="toggle-button">
-            {showDescription ? "Hide" : "Show"} Info
-          </button>
-
-          <button onClick={handleConfigToggle} className="toggle-button">
-            {showConfig ? "Hide" : "Show"} Configuration
-          </button>
+      <header className="app-header">
+        <div className="header-content">
+          <div className="header-title-section">
+            <h1 className="app-title">🎓 WiseUni Student Registry</h1>
+            <p className="app-subtitle">AWS Cognito Integration Demo</p>
+          </div>
+          <div>
+            <button className="info-toggle" onClick={handleDescriptionToggle}>
+              {showDescription ? "Hide Info ▲" : "Show Info ▼"}
+            </button>
+          </div>
         </div>
+      </header>
 
-        {/* Description Display */}
-        {(showDescription || isClosingDescription) && (
-          <div
-            className={`description-display ${
+      <div className="toggle-buttons-container">
+        <button className="toggle-button" onClick={handleConfigToggle}>
+          {showConfig ? "Hide Configuration ▲" : "Show Configuration ▼"}
+        </button>
+      </div>
+
+      <main className="main-content">
+        {showDescription && (
+          <section
+            className={`info-box description-display ${
               isClosingDescription ? "closing" : ""
             }`}
           >
-            <h2>📚 About This Project</h2>
-            <p>
-              This project is a comprehensive learning demonstration of AWS
-              Cognito integration. The purpose is to explore and showcase
-              knowledge of Cognito's authentication and authorization
-              capabilities through a practical student registry application.
-            </p>
-            <p>
-              The application implements a role-based access control system
-              where different user types have distinct interfaces and
-              permissions:
-            </p>
-            <ul>
-              <li>
-                <strong>Students:</strong> Have access to their own student
-                dashboard with personalized views and limited permissions.
-              </li>
-              <li>
-                <strong>Professors:</strong> Have access to a professor
-                dashboard with enhanced permissions for managing courses and
-                student data.
-              </li>
-              <li>
-                <strong>Guest Access:</strong> Provides limited read-only access
-                for unauthenticated users to explore public information.
-              </li>
-            </ul>
-            <p>
-              This implementation demonstrates various Cognito features
-              including user pools, identity pools, hosted UI, custom
-              authentication flows, role-based access control, and integration
-              with AWS services like S3 and DynamoDB.
-            </p>
-          </div>
+            <div className="info-content">
+              <h3>About This Mini Project</h3>
+              <p>
+                This experience walks through everything I know about AWS
+                Cognito—hosted UI flows, fully custom authentication, role-based
+                authorisation, and integrations with S3 / DynamoDB. It mirrors
+                what I previously built for Focalstreams, just focused on a
+                student registry.
+              </p>
+              <div className="info-features">
+                <div className="feature-item">
+                  <span className="feature-icon">👩‍🎓</span>
+                  <span>Students see their dashboard, uploads, grades</span>
+                </div>
+                <div className="feature-item">
+                  <span className="feature-icon">👨‍🏫</span>
+                  <span>Professors manage classes and grading actions</span>
+                </div>
+                <div className="feature-item">
+                  <span className="feature-icon">👀</span>
+                  <span>Guest view demonstrates unauthenticated access</span>
+                </div>
+              </div>
+              <div className="powered-by">
+                <h4>Powered by</h4>
+                <div className="tech-stack">
+                  <span className="tech-badge">AWS Cognito</span>
+                  <span className="tech-badge">React + Vite</span>
+                  <span className="tech-badge">DynamoDB</span>
+                  <span className="tech-badge">Amazon S3</span>
+                </div>
+                <p className="tech-description">
+                  Hosted UI for rapid demos, SDK-based flows for complete
+                  control, identity pool roles for scoped access, and signed URL
+                  uploads for homework.
+                </p>
+              </div>
+            </div>
+          </section>
         )}
 
-        {/* Configuration Display */}
         {(showConfig || isClosingConfig) && (
-          <div className={`config-display ${isClosingConfig ? "closing" : ""}`}>
-            <h2>📋 AWS Configuration</h2>
-
-            <div className="config-section">
-              <h3>User Pool</h3>
-              <div className="config-item">
-                <span className="label">Region:</span>
-                <span className="value">{cognitoConfig.region}</span>
+          <section
+            className={`info-box config-display ${
+              isClosingConfig ? "closing" : ""
+            }`}
+          >
+            <div className="info-content">
+              <h3>📋 AWS Configuration</h3>
+              <div className="config-section">
+                <h4>User Pool</h4>
+                <div className="config-item">
+                  <span className="label">Region</span>
+                  <span className="value">{cognitoConfig.region}</span>
+                </div>
+                <div className="config-item">
+                  <span className="label">User Pool ID</span>
+                  <span className="value">{cognitoConfig.userPoolId}</span>
+                </div>
+                <div className="config-item">
+                  <span className="label">Client ID</span>
+                  <span className="value">
+                    {cognitoConfig.userPoolClientId}
+                  </span>
+                </div>
+                <div className="config-item">
+                  <span className="label">Domain</span>
+                  <span className="value">{cognitoConfig.userPoolDomain}</span>
+                </div>
               </div>
-              <div className="config-item">
-                <span className="label">User Pool ID:</span>
-                <span className="value">{cognitoConfig.userPoolId}</span>
+              <div className="config-section">
+                <h4>Identity Pool</h4>
+                <div className="config-item">
+                  <span className="label">Pool ID</span>
+                  <span className="value">{cognitoConfig.identityPoolId}</span>
+                </div>
               </div>
-              <div className="config-item">
-                <span className="label">Client ID:</span>
-                <span className="value">{cognitoConfig.userPoolClientId}</span>
-              </div>
-              <div className="config-item">
-                <span className="label">Domain:</span>
-                <span className="value">{cognitoConfig.userPoolDomain}</span>
+              <div className="config-section">
+                <h4>Resources</h4>
+                <div className="config-item">
+                  <span className="label">Homework Bucket</span>
+                  <span className="value">{cognitoConfig.homeworkBucket}</span>
+                </div>
+                <div className="config-item">
+                  <span className="label">Grades Table</span>
+                  <span className="value">{cognitoConfig.gradesTable}</span>
+                </div>
               </div>
             </div>
-
-            <div className="config-section">
-              <h3>Identity Pool</h3>
-              <div className="config-item">
-                <span className="label">Identity Pool ID:</span>
-                <span className="value">{cognitoConfig.identityPoolId}</span>
-              </div>
-            </div>
-
-            <div className="config-section">
-              <h3>Resources</h3>
-              <div className="config-item">
-                <span className="label">S3 Bucket:</span>
-                <span className="value">{cognitoConfig.homeworkBucket}</span>
-              </div>
-              <div className="config-item">
-                <span className="label">DynamoDB Table:</span>
-                <span className="value">{cognitoConfig.gradesTable}</span>
-              </div>
-            </div>
-          </div>
+          </section>
         )}
 
-        {/* Hero Section with Liquid Glass Effect */}
-        <div className="hero-section">
-          <div className="liquid-glass-wrapper">
-            <div className="hero-content">
-              <h2 className="hero-title">Choose Your Authentication Method</h2>
-
-              {/* Option 1: Hosted UI */}
-              <div className="auth-option">
-                <h3>🔐 Option 1: Hosted UI Login</h3>
-                <p className="auth-description">
-                  Use AWS Cognito's pre-built authentication pages (managed by
-                  AWS)
-                </p>
-
-                <div className="button-group">
-                  <a
-                    href={hostedUIUrls.login}
-                    className="button primary"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Login with Hosted UI
-                  </a>
-
-                  <a
-                    href={hostedUIUrls.signup}
-                    className="button secondary"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Sign Up with Hosted UI
-                  </a>
-                </div>
-
-                <div className="info-box">
-                  <p>
-                    <strong>✨ Features:</strong>
-                  </p>
-                  <ul>
-                    <li>AWS-managed UI (no custom code needed)</li>
-                    <li>Built-in security best practices</li>
-                    <li>Automatic updates and maintenance</li>
-                    <li>Supports MFA, social login, SAML</li>
-                  </ul>
-                  <p style={{ marginTop: "12px" }}>
-                    <strong>Note:</strong> Opens in new tab, redirects to{" "}
-                    <code>http://localhost:5173/callback</code>
-                  </p>
-                </div>
+        <section className="timeline">
+          <div className="timeline-section">
+            <div className="section-header">
+              <h3 className="section-title">🔐 Option 1 — Hosted UI</h3>
+              <span className="posts-count">AWS Managed</span>
+            </div>
+            <div className="section-body">
+              <p className="auth-description">
+                Use AWS Cognito's pre-built experience for instant demos and
+                production-ready login without designing forms.
+              </p>
+              <div className="button-group">
+                <a
+                  href={hostedUIUrls.login}
+                  className="button primary"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Login with Hosted UI
+                </a>
+                <a
+                  href={hostedUIUrls.signup}
+                  className="button secondary"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Sign Up with Hosted UI
+                </a>
               </div>
-
-              {/* Divider */}
-              <div className="divider">
-                <span>OR</span>
-              </div>
-
-              {/* Option 2: Custom Authentication */}
-              <div className="auth-option">
-                <h3>🎨 Option 2: Custom Authentication</h3>
-                <p className="auth-description">
-                  Use custom-built forms with full control over UI/UX (your own
-                  design)
-                </p>
-
-                <div className="button-group">
-                  <button
-                    onClick={() => navigate("/login")}
-                    className="button primary"
-                  >
-                    Custom Login
-                  </button>
-
-                  <button
-                    onClick={() => navigate("/signup")}
-                    className="button secondary"
-                  >
-                    Custom Sign Up
-                  </button>
-                </div>
-
-                <div className="info-box">
-                  <p>
-                    <strong>✨ Features:</strong>
-                  </p>
-                  <ul>
-                    <li>Full control over UI/UX design</li>
-                    <li>Custom branding and styling</li>
-                    <li>Email verification with OTP</li>
-                    <li>Forgot password flow</li>
-                    <li>Direct Cognito SDK integration</li>
-                  </ul>
-                  <p style={{ marginTop: "12px" }}>
-                    <strong>Note:</strong> Uses{" "}
-                    <code>amazon-cognito-identity-js</code> SDK
-                  </p>
-                </div>
+              <div className="info-box">
+                <ul>
+                  <li>AWS-managed UI with built-in security</li>
+                  <li>Supports MFA, social, SAML, enterprise federation</li>
+                  <li>
+                    Redirects back to <code>/callback</code> with tokens
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+
+          <div className="timeline-section">
+            <div className="section-header">
+              <h3 className="section-title">🎨 Option 2 — Custom Auth</h3>
+              <span className="posts-count">Fully Custom</span>
+            </div>
+            <div className="section-body">
+              <p className="auth-description">
+                Build bespoke flows with <code>amazon-cognito-identity-js</code>
+                : same security, but total UI freedom.
+              </p>
+              <div className="button-group">
+                <button
+                  className="button primary"
+                  onClick={() => navigate("/login")}
+                >
+                  Custom Login
+                </button>
+                <button
+                  className="button secondary"
+                  onClick={() => navigate("/signup")}
+                >
+                  Custom Sign Up
+                </button>
+              </div>
+              <div className="info-box">
+                <ul>
+                  <li>Own the UX, copy, and flows</li>
+                  <li>Email verification + forgot password flows</li>
+                  <li>Direct access to tokens for API/S3/DynamoDB</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
