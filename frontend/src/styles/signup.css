@@ -1,0 +1,110 @@
+/* 
+============================================================================
+SIGNUP SPECIFIC STYLES
+============================================================================ 
+*/
+
+/* Container with gradient background */
+.signup-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+/* Card container */
+.signup-card {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  max-width: 450px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+/* Title */
+.signup-title {
+  color: #2d3748;
+  margin-bottom: 10px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+/* Subtitle */
+.signup-subtitle {
+  color: #718096;
+  margin-bottom: 30px;
+  font-size: 14px;
+}
+
+/* Footer container */
+.signup-footer {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+/* Footer text */
+.signup-footer-text {
+  color: #718096;
+  font-size: 14px;
+}
+
+/* Login link button */
+.signup-link-button {
+  background: none;
+  border: none;
+  color: #667eea;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.signup-link-button:hover {
+  color: #5568d3;
+}
+
+/* Back to home button */
+.signup-back-button {
+  margin-top: 10px;
+  background: none;
+  border: none;
+  color: #a0aec0;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.signup-back-button:hover {
+  color: #718096;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .signup-card {
+    padding: 30px;
+  }
+
+  .signup-title {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .signup-container {
+    padding: 15px;
+  }
+
+  .signup-card {
+    padding: 25px;
+  }
+
+  .signup-title {
+    font-size: 22px;
+  }
+}

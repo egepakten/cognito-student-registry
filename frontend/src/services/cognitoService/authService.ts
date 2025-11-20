@@ -16,10 +16,6 @@ import {
 import { cognitoConfig } from '../../config/cognito';
 import { SignUpParams, LoginParams, AuthTokens } from '../../types/cognitoService.types';
 
-// ============================================================================
-// USER POOL INSTANCE
-// ============================================================================
-
 const userPool = new CognitoUserPool({
   UserPoolId: cognitoConfig.userPoolId,
   ClientId: cognitoConfig.userPoolClientId,
@@ -157,10 +153,6 @@ export const resendVerificationCode = async (email: string): Promise<void> => {
   });
 };
 
-// ============================================================================
-// FORGOT PASSWORD
-// ============================================================================
-
 export const forgotPassword = async (email: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     const cognitoUser = new CognitoUser({
@@ -180,10 +172,6 @@ export const forgotPassword = async (email: string): Promise<void> => {
     });
   });
 };
-
-// ============================================================================
-// CONFIRM PASSWORD RESET
-// ============================================================================
 
 export const confirmPassword = async (
   email: string,
@@ -209,10 +197,6 @@ export const confirmPassword = async (
   });
 };
 
-// ============================================================================
-// LOGOUT
-// ============================================================================
-
 export const logout = (): void => {
   const cognitoUser = userPool.getCurrentUser();
   
@@ -224,9 +208,6 @@ export const logout = (): void => {
   localStorage.clear();
 };
 
-// ============================================================================
-// GET CURRENT USER
-// ============================================================================
 
 export const getCurrentUser = (): CognitoUser | null => {
   return userPool.getCurrentUser();
