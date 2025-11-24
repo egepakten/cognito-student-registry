@@ -40,4 +40,13 @@ manifest_hash = ""
 packagetype = "Zip"
 functions = ["CustomMessageFunction"]
 
+[function_build_definitions.4ac4b07e-0f95-4cc9-b473-be5e57a17202]
+codeuri = "/Users/EgePakten/Desktop/cognito-student-registry/backend/lambda/update_email_template"
+runtime = "python3.11"
+architecture = "x86_64"
+handler = "index.handler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["UpdateEmailTemplateFunction"]
+
 [layer_build_definitions]

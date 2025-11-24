@@ -63,10 +63,6 @@ Resources:
       EnabledMfas:
         - SOFTWARE_TOKEN_MFA
 
-      # Email configuration
-      EmailConfiguration:
-        EmailSendingAccount: COGNITO_DEFAULT
-
       # Account recovery
       AccountRecoverySetting:
         RecoveryMechanisms:
@@ -98,6 +94,8 @@ Resources:
       UserPoolAddOns:
         # If student normally logs in from UK, then suddenly from Russia → Block!
         AdvancedSecurityMode: ENFORCED
+      
+   
 
   # ============================================================================
   # User Pool Domain (for Hosted UI)
@@ -390,6 +388,30 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: cognito-idp.amazonaws.com
       SourceArn: !GetAtt WiseUniUserPool.Arn
+  
+  UpdateEmailTemplateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-update-email-template-${Environment}
+      CodeUri: backend/lambda/update_email_template/
+      Handler: index.handler
+      Runtime: python3.11
+      Timeout: 60
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:UpdateUserPool
+                - cognito-idp:DescribeUserPool
+              Resource: !GetAtt WiseUniUserPool.Arn
+
+  UpdateEmailTemplateResource:
+    Type: Custom::UpdateEmailTemplate
+    DependsOn: WiseUniUserPool
+    Properties:
+      ServiceToken: !GetAtt UpdateEmailTemplateFunction.Arn
+      UserPoolId: !Ref WiseUniUserPool
+  
 
   # ============================================================================
   # S3 Bucket for Homework

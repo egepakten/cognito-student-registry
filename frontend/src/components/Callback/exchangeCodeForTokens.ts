@@ -2,8 +2,8 @@
    * Exchange authorization code for JWT tokens
    * Uses OAuth 2.0 token endpoint
    */
-  import { cognitoConfig } from '../../config/cognito';
- export const exchangeCodeForTokens = async (code: string) => {
+import { cognitoConfig } from '../../config/cognito';
+export const exchangeCodeForTokens = async (code: string) => {
     // Cognito token endpoint
     const tokenEndpoint = `https://${cognitoConfig.oauth.domain}/oauth2/token`;
 

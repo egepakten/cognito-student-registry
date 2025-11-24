@@ -45,8 +45,6 @@ Resources:
       MfaConfiguration: OPTIONAL
       EnabledMfas:
       - SOFTWARE_TOKEN_MFA
-      EmailConfiguration:
-        EmailSendingAccount: COGNITO_DEFAULT
       AccountRecoverySetting:
         RecoveryMechanisms:
         - Name: verified_email
@@ -360,6 +358,37 @@ Resources:
         Fn::GetAtt:
         - WiseUniUserPool
         - Arn
+  UpdateEmailTemplateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${ProjectName}-update-email-template-${Environment}
+      CodeUri: UpdateEmailTemplateFunction
+      Handler: index.handler
+      Runtime: python3.11
+      Timeout: 60
+      Policies:
+      - Statement:
+        - Effect: Allow
+          Action:
+          - cognito-idp:UpdateUserPool
+          - cognito-idp:DescribeUserPool
+          Resource:
+            Fn::GetAtt:
+            - WiseUniUserPool
+            - Arn
+    Metadata:
+      SamResourceId: UpdateEmailTemplateFunction
+  UpdateEmailTemplateResource:
+    Type: Custom::UpdateEmailTemplate
+    DependsOn: WiseUniUserPool
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+        - UpdateEmailTemplateFunction
+        - Arn
+      UserPoolId:
+        Ref: WiseUniUserPool
   HomeworkBucket:
     Type: AWS::S3::Bucket
     Properties:
