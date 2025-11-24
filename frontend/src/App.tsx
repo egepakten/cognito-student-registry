@@ -1,7 +1,7 @@
 // frontend/src/App.tsx
 /**
  * Main Application Router
- * 
+ *
  * Defines all routes for the application:
  * - / : Home/Demo page showing Hosted UI integration
  * - /callback : OAuth callback handler
@@ -12,15 +12,16 @@
  * - /grades : View grades (protected)
  */
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import Callback from './components/Callback/Callback';
-import Dashboard from './components/Dashboard';
-import Login from './components/Login';
-import Signup from './components/SignUp/Signup';
-import UploadHomework from './components/UploadHomework';
-import ViewGrades from './components/ViewGrades';
-import ProtectedRoute from './components/ProtectedRoute';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Callback from "./components/Callback/Callback";
+import Dashboard from "./components/Dashboard/Dashboard";
+import Login from "./components/Login";
+import ForgotPassword from "./components/ForgotPassword";
+import Signup from "./components/SignUp/Signup";
+import UploadHomework from "./components/UploadHomework";
+import ViewGrades from "./components/ViewGrades";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/callback" element={<Callback />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/signup" element={<Signup />} />
 
         {/* Protected routes - require authentication */}

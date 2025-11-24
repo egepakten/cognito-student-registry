@@ -1,3 +1,17 @@
+export interface CognitoUserInfo {
+  sub: string;
+  email: string;
+  email_verified: boolean;
+  name?: string;
+  "cognito:username"?: string;
+  "cognito:groups"?: string[];
+  iat?: number;
+  exp?: number;
+  auth_time?: number;
+  token_use?: string;
+}
+
+export type SignupStep = "details" | "verification";
 
 export interface CognitoError extends Error {
   code?: string;
@@ -21,23 +35,17 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
-export type SignupStep = 'details' | 'verification';
+export interface AuthContextValue {
+  user: CognitoUserInfo | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  logout: () => void;
+  tokens: AuthTokens | null;
+}
 
-/**
- * User types from Cognito JWT tokens
- */
-
-export interface CognitoUserInfo {
-  sub: string;                    // User ID (UUID)
-  email: string;                  // User email
-  email_verified: boolean;        // Email verification status
-  name?: string;                  // User's name (optional)
-  'cognito:username'?: string;    // Cognito username
-  'cognito:groups'?: string[];    // User groups (if any)
-  iat?: number;                   // Issued at (timestamp)
-  exp?: number;                   // Expiration (timestamp)
-  auth_time?: number;             // Authentication time
-  token_use?: string;             // Token type (id/access)
+export interface AuthSession {
+  user: CognitoUserInfo;
+  tokens: AuthTokens; // Contains raw idToken, accessToken, refreshToken
 }
 
 export interface AuthTokens {

@@ -29,6 +29,244 @@ Globals:
         LOG_LEVEL: INFO
 
 Resources:
+  # ========================================
+  # DYNAMODB TABLE
+  # ========================================
+  # CHANGE: Added single-table design for all WiseUni data
+  # REASON: Efficient queries, per-user isolation via partition key
+
+  WiseUniTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub WiseUni-Data-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        # Primary Key
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        # GSI for course lookups
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+  # ----- STUDENT ROLE -----
+  # CHANGE: Added DynamoDB permissions with LeadingKey condition
+  # REASON: Students can ONLY access items where PK = USER#{their-identity-id}
+
+  StudentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub WiseUni-StudentRole-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref IdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+      Policies:
+        # Existing S3 policy...
+        - PolicyName: StudentS3Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${UploadsBucket}/students/${!cognito-identity.amazonaws.com:sub}/*"
+
+        # CHANGE: NEW - DynamoDB policy with per-user isolation
+        # REASON: LeadingKeys condition restricts to items starting with USER#{sub}
+        - PolicyName: StudentDynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Read/Write own user data (profile, enrollments, grades)
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt WiseUniTable.Arn
+                Condition:
+                  ForAllValues:StringLike:
+                    dynamodb:LeadingKeys:
+                      - "USER#${cognito-identity.amazonaws.com:sub}"
+              # Read-only access to course metadata (COURSE# items)
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt WiseUniTable.Arn
+                Condition:
+                  ForAllValues:StringLike:
+                    dynamodb:LeadingKeys:
+                      - "COURSE#*"
+              # GSI access for finding enrolled courses
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "${WiseUniTable.Arn}/index/GSI1"
+  # ----- PROFESSOR ROLE -----
+  # CHANGE: Professors can access their data + read student data for their courses
+
+  ProfessorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub WiseUni-ProfessorRole-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref IdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+      Policies:
+        # S3 policies (existing)...
+        - PolicyName: ProfessorS3Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${UploadsBucket}/professors/${!cognito-identity.amazonaws.com:sub}/*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${UploadsBucket}/students/*"
+
+        # CHANGE: NEW - DynamoDB policy for professors
+        # REASON: Can manage grades, view course rosters
+        - PolicyName: ProfessorDynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Own profile data
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt WiseUniTable.Arn
+                Condition:
+                  ForAllValues:StringLike:
+                    dynamodb:LeadingKeys:
+                      - "USER#${cognito-identity.amazonaws.com:sub}"
+              # Full access to COURSE# items (roster, metadata)
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt WiseUniTable.Arn
+                Condition:
+                  ForAllValues:StringLike:
+                    dynamodb:LeadingKeys:
+                      - "COURSE#*"
+              # Read student profiles (for grading)
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt WiseUniTable.Arn
+                Condition:
+                  ForAllValues:StringLike:
+                    dynamodb:LeadingKeys:
+                      - "USER#*"
+              # GSI access
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "${WiseUniTable.Arn}/index/GSI1"
+  # ----- ADMIN ROLE -----
+  # CHANGE: Admins have full DynamoDB access
+
+  AdminRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub WiseUni-AdminRole-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref IdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+      Policies:
+        - PolicyName: AdminS3Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !GetAtt UploadsBucket.Arn
+                  - !Sub "${UploadsBucket.Arn}/*"
+
+        # CHANGE: Full DynamoDB access for admins
+        - PolicyName: AdminDynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource:
+                  - !GetAtt WiseUniTable.Arn
+                  - !Sub "${WiseUniTable.Arn}/index/*"
+
   # ============================================================================
   # Cognito User Pool
   # ============================================================================
@@ -94,8 +332,6 @@ Resources:
       UserPoolAddOns:
         # If student normally logs in from UK, then suddenly from Russia → Block!
         AdvancedSecurityMode: ENFORCED
-      
-   
 
   # ============================================================================
   # User Pool Domain (for Hosted UI)
@@ -128,12 +364,12 @@ Resources:
 
       # Callback URLs
       CallbackURLs:
-        - http://localhost:5173/callback  # Vite default port
-        - http://localhost:3000/callback 
+        - http://localhost:5173/callback # Vite default port
+        - http://localhost:3000/callback
         - !Sub https://app.${ProjectName}.com/callback
 
       LogoutURLs:
-        - http://localhost:5173/  # Vite default port
+        - http://localhost:5173/ # Vite default port
         - http://localhost:3000/
         - !Sub https://app.${ProjectName}.com/
 
@@ -329,16 +565,16 @@ Resources:
       Handler: index.handler
       Description: Sends welcome email after confirmation
       Policies:
-        - Version: '2012-10-17'
+        - Version: "2012-10-17"
           Statement:
             - Effect: Allow
               Action:
                 - ses:SendEmail
                 - ses:SendRawEmail
               Resource:
-                - !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/wiseuni.co.uk'
-                - !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*@wiseuni.co.uk'
-                - !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*'
+                - !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/wiseuni.co.uk"
+                - !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*@wiseuni.co.uk"
+                - !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*"
 
   PreAuthenticationFunction:
     Type: AWS::Serverless::Function
@@ -388,7 +624,7 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: cognito-idp.amazonaws.com
       SourceArn: !GetAtt WiseUniUserPool.Arn
-  
+
   UpdateEmailTemplateFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -411,7 +647,6 @@ Resources:
     Properties:
       ServiceToken: !GetAtt UpdateEmailTemplateFunction.Arn
       UserPoolId: !Ref WiseUniUserPool
-  
 
   # ============================================================================
   # S3 Bucket for Homework
@@ -473,6 +708,13 @@ Resources:
 # ============================================================================
 
 Outputs:
+  # DynamoDB Table
+  WiseUniTableName:
+    Description: DynamoDB table for WiseUni data
+    Value: !Ref WiseUniTable
+    Export:
+      Name: !Sub ${ProjectName}-WiseUniTableName-${Environment}
+
   # User Pool information
   UserPoolId:
     Description: Cognito User Pool ID

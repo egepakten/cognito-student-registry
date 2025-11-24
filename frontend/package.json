@@ -10,8 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity": "^3.936.0",
     "@aws-sdk/client-dynamodb": "^3.927.0",
-    "@aws-sdk/client-s3": "^3.927.0",
+    "@aws-sdk/client-s3": "^3.937.0",
     "@aws-sdk/credential-providers": "^3.927.0",
     "@aws-sdk/lib-dynamodb": "^3.927.0",
     "@aws-sdk/s3-request-presigner": "^3.927.0",
