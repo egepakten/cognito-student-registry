@@ -37,10 +37,11 @@ export interface AuthTokens {
 
 export interface AuthContextValue {
   user: CognitoUserInfo | null;
+  tokens: AuthTokens | null;
   isAuthenticated: boolean;
   loading: boolean;
   logout: () => void;
-  tokens: AuthTokens | null;
+  handleAuthSuccess: (authTokens: AuthTokens) => void;
 }
 
 export interface AuthSession {

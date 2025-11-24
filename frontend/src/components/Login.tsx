@@ -1,6 +1,6 @@
 /**
  * Custom Login Component
- * 
+ *
  * Flow:
  * 1. User enters email + password
  * 2. Call Cognito authentication
@@ -9,135 +9,68 @@
  * 5. Redirect to dashboard
  */
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { login } from '../services/cognitoService'; 
-import '../styles/login.css';
-import { isCognitoError } from '../utils/errorHandler';
-
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { login } from "../services/cognitoService";
+import "../styles/login.css";
+import { isCognitoError } from "../utils/errorHandler";
+import { useAuth } from "../hooks/useAuth";
 export default function Login() {
   const navigate = useNavigate();
-  
+  const { handleAuthSuccess } = useAuth();
+
   // Form state
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   // UI state
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     // SUCCESS PATH - Attempt login
     try {
-      console.log('🔐 Attempting login for:', email);
-      
+      console.log("🔐 Attempting login for:", email);
+
       // Call Cognito login
       const tokens = await login({ email, password });
-      
-      console.log('✅ Login successful!', {
+
+      console.log("✅ Login successful!", {
         hasAccessToken: !!tokens.accessToken,
         hasIdToken: !!tokens.idToken,
       });
-      /*
-        Store Access Token | Used for: API authorization
-         Example: When user uploads homework, send this token
-         Server checks: "Is this token valid? OK, allow upload."
-      */
-      localStorage.setItem('accessToken', tokens.accessToken);
-      /* 
-        Store ID Token | Contains: User information (email, name, user ID)
-         Used for: Displaying user profile, personalization
-         Example: "Welcome back, John!"
-      */
-      localStorage.setItem('idToken', tokens.idToken);
-      /**
-        Store Refresh Token
-         
-         Used for: Getting new tokens when they expire
-         Access/ID tokens expire after 1 hour
-         Refresh token valid for 30 days
-         
-         Flow:
-         1. Access token expires
-         2. Use refresh token to get new access token
-         3. User stays logged in without re-entering password
-       */
-      localStorage.setItem('refreshToken', tokens.refreshToken);
-      
-      // Decode and store user info
-      /**
-        JWT Structure:
-        
-        JWT = header.payload.signature
-        Example: eyJhbGc.eyJzdWI.SflKxw
-                    ↑       ↑       ↑
-                 Header  Payload Signature
-        
-        All 3 parts are Base64-encoded
-        We want to decode the PAYLOAD (middle part)
-        
-        Payload contains:
-        - sub: User ID (UUID)
-        - email: User's email
-        - name: User's name
-        - exp: Expiration timestamp
-        - iat: Issued at timestamp
-      */
-      // Split JWT and get payload (middle part)
-      const base64Url = tokens.idToken.split('.')[1];
-      // Convert URL-safe Base64 to standard Base64
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      // Decode Base64 to JSON string (complex but important!)
-      // Final result: JSON string | Example: '{"sub":"123","email":"john@example.com","name":"John"}'
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      /**
-        Parse JSON string to JavaScript object
-        
-        JSON.parse(): Converts JSON string to object
-        
-        Input: '{"sub":"123","email":"john@example.com"}'
-        Output: { sub: "123", email: "john@example.com" }
-        
-        Now we can access: userInfo.email, userInfo.sub, etc.
-       */
-      const userInfo = JSON.parse(jsonPayload);
-      localStorage.setItem('userInfo', JSON.stringify(userInfo));
-      
-      console.log('✅ User authenticated:', userInfo.email);
-      
+
+      handleAuthSuccess(tokens);
+
       // Redirect to dashboard
-      navigate('/dashboard');
-      
-    } catch (err: unknown) {  
-      console.error('❌ Login error:', err);
-      
+      navigate("/dashboard");
+    } catch (err: unknown) {
+      console.error("❌ Login error:", err);
+
       // Handle specific errors
       if (isCognitoError(err)) {
         // Handle specific Cognito errors
-        if (err.code === 'UserNotConfirmedException') {
-          setError('Please verify your email first. Check your inbox for the verification code.');
-        } else if (err.code === 'NotAuthorizedException') {
-          setError('Incorrect email or password');
-        } else if (err.code === 'UserNotFoundException') {
-          setError('User not found. Please sign up first.');
+        if (err.code === "UserNotConfirmedException") {
+          setError(
+            "Please verify your email first. Check your inbox for the verification code."
+          );
+        } else if (err.code === "NotAuthorizedException") {
+          setError("Incorrect email or password");
+        } else if (err.code === "UserNotFoundException") {
+          setError("User not found. Please sign up first.");
         } else {
-          setError(err.message || 'Login failed');
+          setError(err.message || "Login failed");
         }
       } else if (err instanceof Error) {
         // Handle standard JavaScript errors
         setError(err.message);
       } else {
         // Handle unknown errors
-        setError('An unexpected error occurred. Please try again.');
+        setError("An unexpected error occurred. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -152,7 +85,7 @@ export default function Login() {
           <h2 className="auth-title">🔐 Welcome Back</h2>
           <p className="auth-subtitle">Sign in to WiseUni Student Portal</p>
         </div>
-        
+
         {/* Login Form */}
         <form onSubmit={handleLogin} className="auth-form">
           {/* Email Input */}
@@ -171,7 +104,7 @@ export default function Login() {
               autoComplete="email"
             />
           </div>
-          
+
           {/* Password Input */}
           <div className="form-group">
             <label htmlFor="password" className="form-label">
@@ -188,18 +121,18 @@ export default function Login() {
               autoComplete="current-password"
             />
           </div>
-          
+
           {/* Forgot Password Link */}
           <div className="login-forgot-password">
             <button
               type="button"
-              onClick={() => navigate('/forgot-password')}
+              onClick={() => navigate("/forgot-password")}
               className="login-forgot-link"
             >
               Forgot Password?
             </button>
           </div>
-          
+
           {/* Error Message */}
           {error && (
             <div className="message-box message-error">
@@ -207,10 +140,10 @@ export default function Login() {
               <p className="message-text">{error}</p>
             </div>
           )}
-          
+
           {/* Submit Button */}
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             className="auth-button auth-button-primary"
           >
@@ -220,27 +153,21 @@ export default function Login() {
                 Signing in...
               </span>
             ) : (
-              'Sign In'
+              "Sign In"
             )}
           </button>
         </form>
-        
+
         {/* Footer */}
         <div className="auth-footer">
           <p className="auth-footer-text">
-            Don't have an account?{' '}
-            <button
-              onClick={() => navigate('/signup')}
-              className="auth-link"
-            >
+            Don't have an account?{" "}
+            <button onClick={() => navigate("/signup")} className="auth-link">
               Sign Up
             </button>
           </p>
-          
-          <button
-            onClick={() => navigate('/')}
-            className="auth-back-link"
-          >
+
+          <button onClick={() => navigate("/")} className="auth-back-link">
             ← Back to Home
           </button>
         </div>
