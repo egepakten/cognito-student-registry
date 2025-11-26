@@ -97,7 +97,7 @@ Resources:
                   - s3:PutObject
                   - s3:DeleteObject
                 Resource:
-                  - !Sub "arn:aws:s3:::${UploadsBucket}/students/${!cognito-identity.amazonaws.com:sub}/*"
+                  - !Sub "arn:aws:s3:::${HomeworkBucket}/students/${!cognito-identity.amazonaws.com:sub}/*"
 
         # CHANGE: NEW - DynamoDB policy with per-user isolation
         # REASON: LeadingKeys condition restricts to items starting with USER#{sub}
@@ -167,12 +167,12 @@ Resources:
                   - s3:PutObject
                   - s3:DeleteObject
                 Resource:
-                  - !Sub "arn:aws:s3:::${UploadsBucket}/professors/${!cognito-identity.amazonaws.com:sub}/*"
+                  - !Sub "arn:aws:s3:::${HomeworkBucket}/professors/${!cognito-identity.amazonaws.com:sub}/*"
               - Effect: Allow
                 Action:
                   - s3:GetObject
                 Resource:
-                  - !Sub "arn:aws:s3:::${UploadsBucket}/students/*"
+                  - !Sub "arn:aws:s3:::${HomeworkBucket}/students/*"
 
         # CHANGE: NEW - DynamoDB policy for professors
         # REASON: Can manage grades, view course rosters
@@ -252,8 +252,8 @@ Resources:
                 Action:
                   - s3:*
                 Resource:
-                  - !GetAtt UploadsBucket.Arn
-                  - !Sub "${UploadsBucket.Arn}/*"
+                  - !GetAtt HomeworkBucket.Arn
+                  - !Sub "${HomeworkBucket.Arn}/*"
 
         # CHANGE: Full DynamoDB access for admins
         - PolicyName: AdminDynamoDBAccess
@@ -352,6 +352,7 @@ Resources:
     Properties:
       ClientName: !Sub ${ProjectName}-web-client-${Environment}
       UserPoolId: !Ref WiseUniUserPool
+      GenerateSecret: false
 
       # OAuth configuration for Hosted UI
       AllowedOAuthFlows:
@@ -391,9 +392,10 @@ Resources:
         - ALLOW_USER_SRP_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
         - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_CUSTOM_AUTH
 
-      # Prevent client secret (for web apps)
-      GenerateSecret: false
+        # Prevent user existence errors (security)
+      PreventUserExistenceErrors: ENABLED
 
       # ReadAttributes section - Cognito will default to allowing all attributes to be read
       # WriteAttributes section - Cognito will default to allowing all mutable attributes to be written
@@ -591,6 +593,15 @@ Resources:
       CodeUri: backend/lambda/custom_message/
       Handler: index.handler
       Description: Customizes verification emails
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: "*"
 
   # Lambda permissions for Cognito to invoke
   PreSignupPermission:
@@ -648,6 +659,30 @@ Resources:
       ServiceToken: !GetAtt UpdateEmailTemplateFunction.Arn
       UserPoolId: !Ref WiseUniUserPool
 
+  # ========================================
+  # COGNITO GROUPS (Existing)
+  # ========================================
+  StudentsGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: students
+      UserPoolId: !Ref WiseUniUserPool
+      Description: Student users
+
+  ProfessorsGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: professors
+      UserPoolId: !Ref WiseUniUserPool
+      Description: Professor users
+
+  AdminsGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: admins
+      UserPoolId: !Ref WiseUniUserPool
+      Description: Admin users
+
   # ============================================================================
   # S3 Bucket for Homework
   # ============================================================================
@@ -676,32 +711,6 @@ Resources:
               - http://localhost:3000
               - !Sub https://app.${ProjectName}.com
             MaxAge: 3600
-
-  # ============================================================================
-  # DynamoDB Table for Grades
-  # ============================================================================
-
-  GradesTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub ${ProjectName}-grades-${Environment}
-      BillingMode: PAY_PER_REQUEST
-
-      # Partition key must match user ID
-      AttributeDefinitions:
-        - AttributeName: studentId
-          AttributeType: S
-        - AttributeName: course
-          AttributeType: S
-
-      KeySchema:
-        - AttributeName: studentId
-          KeyType: HASH # Partition key
-        - AttributeName: course
-          KeyType: RANGE # Sort key
-
-      StreamSpecification:
-        StreamViewType: NEW_AND_OLD_IMAGES
 
 # ============================================================================
 # Outputs
@@ -738,13 +747,6 @@ Outputs:
   HostedUILoginURL:
     Description: Hosted UI Login URL
     Value: !Sub https://${ProjectName}-students-${Environment}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${WiseUniUserPoolClient}&response_type=code&scope=email+openid+profile&redirect_uri=http://localhost:5173/callback
-
-  # Identity Pool information
-  IdentityPoolId:
-    Description: Cognito Identity Pool ID
-    Value: !Ref WiseUniIdentityPool
-    Export:
-      Name: !Sub ${ProjectName}-IdentityPoolId-${Environment}
 
   # S3 Bucket
   HomeworkBucketName:
