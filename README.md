@@ -374,3 +374,39 @@ Created as a comprehensive learning demonstration of AWS Cognito integration cap
 ---
 
 **Note**: This project is designed for learning and demonstration purposes. Ensure proper security practices and compliance requirements are met before deploying to production environments.
+
+                       template.yaml (Main)                             │
+
+│ │ │
+│ ┌────────────────────┼────────────────────┐ │
+│ │ │ │ │
+│ ▼ ▼ ▼ │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
+│ │ cognito.yaml│ │database.yaml│ │ storage.yaml│ │
+│ │ │ │ │ │ │ │
+│ │ • UserPool │ │ • WiseUni │ │ • Homework │ │
+│ │ • Identity │ │ Table │ │ Bucket │ │
+│ │ Pool │ │ │ │ │ │
+│ │ • Groups │ │ │ │ │ │
+│ └─────────────┘ └─────────────┘ └─────────────┘ │
+│ │ │ │ │
+│ └────────────────────┼────────────────────┘ │
+│ │ │
+│ ▼ │
+│ ┌─────────────────┐ │
+│ │ iam-roles.yaml │ │
+│ │ │ │
+│ │ • StudentRole │ Uses outputs from │
+│ │ • ProfessorRole │ other stacks │
+│ │ • AdminRole │ │
+│ │ • GuestRole │ │
+│ └─────────────────┘ │
+│ │
+│ ┌─────────────────────┐ │
+│ │lambda-triggers.yaml │ Created first │
+│ │ │ (Cognito depends on it) │
+│ │ • PreSignUp │ │
+│ │ • PostConfirmation │ │
+│ │ • PreAuthentication │ │
+│ │ • CustomMessage │ │
+│ └─────────────────────┘

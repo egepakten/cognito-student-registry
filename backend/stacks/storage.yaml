@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: WiseUni - Storage Stack (S3)
+
+Parameters:
+  ProjectName:
+    Type: String
+  Environment:
+    Type: String
+
+# Resources
+Resources:
+  # HOMEWORK UPLOADS BUCKET
+  HomeworkBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectName}-uploads-${Environment}-${AWS::AccountId}
+
+      # Block public access
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+      # Enable versioning (recover deleted files)
+      VersioningConfiguration:
+        Status: Enabled
+
+      # CORS for frontend uploads
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+            AllowedOrigins:
+              - http://localhost:5173
+              - http://localhost:3000
+            MaxAge: 3600
+
+      # Lifecycle rules (optional: delete old versions after 90 days)
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 90
+
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+# Outputs
+Outputs:
+  HomeworkBucketName:
+    Description: S3 Bucket Name
+    Value: !Ref HomeworkBucket
+
+  HomeworkBucketArn:
+    Description: S3 Bucket ARN
+    Value: !GetAtt HomeworkBucket.Arn

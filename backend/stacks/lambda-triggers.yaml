@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: WiseUni - Lambda Triggers Stack
+
+Parameters:
+  ProjectName:
+    Type: String
+  Environment:
+    Type: String
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+        LOG_LEVEL: INFO
+
+Resources:
+  # PRE-SIGNUP FUNCTION
+  PreSignUpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-pre-signup-${Environment}
+      CodeUri: ../lambda/pre_signup/
+      Handler: index.handler
+      Description: Validates email domain before signup
+
+  # POST-CONFIRMATION FUNCTION
+  PostConfirmationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-post-confirmation-${Environment}
+      CodeUri: ../lambda/post_confirmation/
+      Handler: index.handler
+      Description: Sends welcome email after confirmation
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: "*"
+
+  # PRE-AUTHENTICATION FUNCTION
+  PreAuthenticationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-pre-auth-${Environment}
+      CodeUri: ../lambda/pre_authentication/
+      Handler: index.handler
+      Description: Validates login conditions
+
+  # CUSTOM MESSAGE FUNCTION
+  CustomMessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-custom-message-${Environment}
+      CodeUri: ../lambda/custom_message/
+      Handler: index.handler
+      Description: Customizes email templates
+
+# Outputs
+Outputs:
+  PreSignUpFunctionArn:
+    Description: Pre-Signup Function ARN
+    Value: !GetAtt PreSignUpFunction.Arn
+
+  PostConfirmationFunctionArn:
+    Description: Post-Confirmation Function ARN
+    Value: !GetAtt PostConfirmationFunction.Arn
+
+  PreAuthenticationFunctionArn:
+    Description: Pre-Authentication Function ARN
+    Value: !GetAtt PreAuthenticationFunction.Arn
+
+  CustomMessageFunctionArn:
+    Description: Custom Message Function ARN
+    Value: !GetAtt CustomMessageFunction.Arn
+isual Summary

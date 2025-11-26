@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: WiseUni - Database Stack (DynamoDB)
+
+Parameters:
+  ProjectName:
+    Type: String
+  Environment:
+    Type: String
+
+Resources:
+  # Main data table (Single-Table Design)
+  WiseUniTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${ProjectName}-data-${Environment}
+      BillingMode: PAY_PER_REQUEST
+
+      # Key Schema
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
+      # Global Secondary Index
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+      # Enable streams for real-time updates
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+      # Point-in-time recovery (backup)
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+# Outputs
+Outputs:
+  WiseUniTableName:
+    Description: DynamoDB Table Name
+    Value: !Ref WiseUniTable
+
+  WiseUniTableArn:
+    Description: DynamoDB Table ARN
+    Value: !GetAtt WiseUniTable.Arn
+
+  WiseUniTableStreamArn:
+    Description: DynamoDB Stream ARN
+    Value: !GetAtt WiseUniTable.StreamArn

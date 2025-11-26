@@ -1,0 +1,241 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: WiseUni - IAM Roles Stack
+
+Parameters:
+  ProjectName:
+    Type: String
+  Environment:
+    Type: String
+  IdentityPoolId:
+    Type: String
+    Description: Cognito Identity Pool ID
+  WiseUniTableArn:
+    Type: String
+    Description: DynamoDB Table ARN
+  HomeworkBucketArn:
+    Type: String
+    Description: S3 Bucket ARN
+
+Resources:
+  # Student role
+  StudentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-student-role-${Environment}
+
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref IdentityPoolId
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+
+      Policies:
+        # S3: Own folder only
+        - PolicyName: StudentS3Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub "${HomeworkBucketArn}/students/${!cognito-identity.amazonaws.com:sub}/*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Ref HomeworkBucketArn
+                Condition:
+                  StringLike:
+                    s3:prefix:
+                      - "students/${cognito-identity.amazonaws.com:sub}/*"
+
+        # DynamoDB: Own data only
+        - PolicyName: StudentDynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                Resource:
+                  - !Ref WiseUniTableArn
+                Condition:
+                  ForAllValues:StringLike:
+                    dynamodb:LeadingKeys:
+                      - "USER#${cognito-identity.amazonaws.com:sub}"
+              # Read course metadata
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource:
+                  - !Ref WiseUniTableArn
+                Condition:
+                  ForAllValues:StringLike:
+                    dynamodb:LeadingKeys:
+                      - "COURSE#*"
+
+  # Professor role
+  ProfessorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-professor-role-${Environment}
+
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref IdentityPoolId
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+
+      Policies:
+        # S3: Own folder + read student folders
+        - PolicyName: ProfessorS3Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub "${HomeworkBucketArn}/professors/${!cognito-identity.amazonaws.com:sub}/*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub "${HomeworkBucketArn}/students/*"
+
+        # DynamoDB: More access than students
+        - PolicyName: ProfessorDynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !Ref WiseUniTableArn
+                  - !Sub "${WiseUniTableArn}/index/*"
+
+  # Admin role
+  AdminRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-admin-role-${Environment}
+
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref IdentityPoolId
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+
+      Policies:
+        # S3: Full access
+        - PolicyName: AdminS3Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Ref HomeworkBucketArn
+                  - !Sub "${HomeworkBucketArn}/*"
+
+        # DynamoDB: Full access
+        - PolicyName: AdminDynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource:
+                  - !Ref WiseUniTableArn
+                  - !Sub "${WiseUniTableArn}/index/*"
+
+  # Unauthenticated role (Guest)
+  UnauthenticatedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-unauthenticated-role-${Environment}
+
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref IdentityPoolId
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: unauthenticated
+
+      Policies:
+        # Guests can only read public folder
+        - PolicyName: GuestS3Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub "${HomeworkBucketArn}/public/*"
+
+  # Attach roles to identity pool
+  IdentityPoolRoleAttachment:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref IdentityPoolId
+      Roles:
+        authenticated: !GetAtt StudentRole.Arn # Default role
+        unauthenticated: !GetAtt UnauthenticatedRole.Arn
+
+# Outputs
+Outputs:
+  StudentRoleArn:
+    Description: Student IAM Role ARN
+    Value: !GetAtt StudentRole.Arn
+
+  ProfessorRoleArn:
+    Description: Professor IAM Role ARN
+    Value: !GetAtt ProfessorRole.Arn
+
+  AdminRoleArn:
+    Description: Admin IAM Role ARN
+    Value: !GetAtt AdminRole.Arn

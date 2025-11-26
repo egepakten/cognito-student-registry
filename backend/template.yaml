@@ -1,8 +1,6 @@
-# template.yaml
-
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: WiseUni Cognito Learning Mini Project - Complete Infrastructure
+Description: WiseUni - Main Stack (imports all nested stacks)
 
 Parameters:
   ProjectName:
@@ -19,754 +17,91 @@ Parameters:
       - prod
     Description: Environment name
 
-Globals:
-  Function:
-    Timeout: 30
-    Runtime: python3.11
-    MemorySize: 256
-    Environment:
-      Variables:
-        LOG_LEVEL: INFO
-
+# NESTED STACKS
 Resources:
-  # ========================================
-  # DYNAMODB TABLE
-  # ========================================
-  # CHANGE: Added single-table design for all WiseUni data
-  # REASON: Efficient queries, per-user isolation via partition key
-
-  WiseUniTable:
-    Type: AWS::DynamoDB::Table
+  # ----- COGNITO STACK -----
+  CognitoStack:
+    Type: AWS::CloudFormation::Stack
     Properties:
-      TableName: !Sub WiseUni-Data-${Environment}
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        # Primary Key
-        - AttributeName: PK
-          AttributeType: S
-        - AttributeName: SK
-          AttributeType: S
-        # GSI for course lookups
-        - AttributeName: GSI1PK
-          AttributeType: S
-        - AttributeName: GSI1SK
-          AttributeType: S
-      KeySchema:
-        - AttributeName: PK
-          KeyType: HASH
-        - AttributeName: SK
-          KeyType: RANGE
-      GlobalSecondaryIndexes:
-        - IndexName: GSI1
-          KeySchema:
-            - AttributeName: GSI1PK
-              KeyType: HASH
-            - AttributeName: GSI1SK
-              KeyType: RANGE
-          Projection:
-            ProjectionType: ALL
-  # ----- STUDENT ROLE -----
-  # CHANGE: Added DynamoDB permissions with LeadingKey condition
-  # REASON: Students can ONLY access items where PK = USER#{their-identity-id}
+      TemplateURL: stacks/cognito.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        # Pass Lambda ARNs for triggers
+        PreSignUpFunctionArn: !GetAtt LambdaTriggersStack.Outputs.PreSignUpFunctionArn
+        PostConfirmationFunctionArn: !GetAtt LambdaTriggersStack.Outputs.PostConfirmationFunctionArn
+        PreAuthenticationFunctionArn: !GetAtt LambdaTriggersStack.Outputs.PreAuthenticationFunctionArn
+        CustomMessageFunctionArn: !GetAtt LambdaTriggersStack.Outputs.CustomMessageFunctionArn
 
-  StudentRole:
-    Type: AWS::IAM::Role
+  # ----- DATABASE STACK -----
+  DatabaseStack:
+    Type: AWS::CloudFormation::Stack
     Properties:
-      RoleName: !Sub WiseUni-StudentRole-${Environment}
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: cognito-identity.amazonaws.com
-            Action: sts:AssumeRoleWithWebIdentity
-            Condition:
-              StringEquals:
-                cognito-identity.amazonaws.com:aud: !Ref IdentityPool
-              ForAnyValue:StringLike:
-                cognito-identity.amazonaws.com:amr: authenticated
-      Policies:
-        # Existing S3 policy...
-        - PolicyName: StudentS3Access
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:PutObject
-                  - s3:DeleteObject
-                Resource:
-                  - !Sub "arn:aws:s3:::${HomeworkBucket}/students/${!cognito-identity.amazonaws.com:sub}/*"
+      TemplateURL: stacks/database.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
 
-        # CHANGE: NEW - DynamoDB policy with per-user isolation
-        # REASON: LeadingKeys condition restricts to items starting with USER#{sub}
-        - PolicyName: StudentDynamoDBAccess
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              # Read/Write own user data (profile, enrollments, grades)
-              - Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:PutItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:DeleteItem
-                  - dynamodb:Query
-                Resource:
-                  - !GetAtt WiseUniTable.Arn
-                Condition:
-                  ForAllValues:StringLike:
-                    dynamodb:LeadingKeys:
-                      - "USER#${cognito-identity.amazonaws.com:sub}"
-              # Read-only access to course metadata (COURSE# items)
-              - Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:Query
-                Resource:
-                  - !GetAtt WiseUniTable.Arn
-                Condition:
-                  ForAllValues:StringLike:
-                    dynamodb:LeadingKeys:
-                      - "COURSE#*"
-              # GSI access for finding enrolled courses
-              - Effect: Allow
-                Action:
-                  - dynamodb:Query
-                Resource:
-                  - !Sub "${WiseUniTable.Arn}/index/GSI1"
-  # ----- PROFESSOR ROLE -----
-  # CHANGE: Professors can access their data + read student data for their courses
-
-  ProfessorRole:
-    Type: AWS::IAM::Role
+  # ----- STORAGE STACK -----
+  StorageStack:
+    Type: AWS::CloudFormation::Stack
     Properties:
-      RoleName: !Sub WiseUni-ProfessorRole-${Environment}
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: cognito-identity.amazonaws.com
-            Action: sts:AssumeRoleWithWebIdentity
-            Condition:
-              StringEquals:
-                cognito-identity.amazonaws.com:aud: !Ref IdentityPool
-              ForAnyValue:StringLike:
-                cognito-identity.amazonaws.com:amr: authenticated
-      Policies:
-        # S3 policies (existing)...
-        - PolicyName: ProfessorS3Access
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:PutObject
-                  - s3:DeleteObject
-                Resource:
-                  - !Sub "arn:aws:s3:::${HomeworkBucket}/professors/${!cognito-identity.amazonaws.com:sub}/*"
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                Resource:
-                  - !Sub "arn:aws:s3:::${HomeworkBucket}/students/*"
+      TemplateURL: stacks/storage.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
 
-        # CHANGE: NEW - DynamoDB policy for professors
-        # REASON: Can manage grades, view course rosters
-        - PolicyName: ProfessorDynamoDBAccess
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              # Own profile data
-              - Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:PutItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:Query
-                Resource:
-                  - !GetAtt WiseUniTable.Arn
-                Condition:
-                  ForAllValues:StringLike:
-                    dynamodb:LeadingKeys:
-                      - "USER#${cognito-identity.amazonaws.com:sub}"
-              # Full access to COURSE# items (roster, metadata)
-              - Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:PutItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:DeleteItem
-                  - dynamodb:Query
-                Resource:
-                  - !GetAtt WiseUniTable.Arn
-                Condition:
-                  ForAllValues:StringLike:
-                    dynamodb:LeadingKeys:
-                      - "COURSE#*"
-              # Read student profiles (for grading)
-              - Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:Query
-                Resource:
-                  - !GetAtt WiseUniTable.Arn
-                Condition:
-                  ForAllValues:StringLike:
-                    dynamodb:LeadingKeys:
-                      - "USER#*"
-              # GSI access
-              - Effect: Allow
-                Action:
-                  - dynamodb:Query
-                Resource:
-                  - !Sub "${WiseUniTable.Arn}/index/GSI1"
-  # ----- ADMIN ROLE -----
-  # CHANGE: Admins have full DynamoDB access
-
-  AdminRole:
-    Type: AWS::IAM::Role
+  # ----- IAM ROLES STACK -----
+  IAMRolesStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - CognitoStack
+      - DatabaseStack
+      - StorageStack
     Properties:
-      RoleName: !Sub WiseUni-AdminRole-${Environment}
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: cognito-identity.amazonaws.com
-            Action: sts:AssumeRoleWithWebIdentity
-            Condition:
-              StringEquals:
-                cognito-identity.amazonaws.com:aud: !Ref IdentityPool
-              ForAnyValue:StringLike:
-                cognito-identity.amazonaws.com:amr: authenticated
-      Policies:
-        - PolicyName: AdminS3Access
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:*
-                Resource:
-                  - !GetAtt HomeworkBucket.Arn
-                  - !Sub "${HomeworkBucket.Arn}/*"
+      TemplateURL: stacks/iam-roles.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        IdentityPoolId: !GetAtt CognitoStack.Outputs.IdentityPoolId
+        WiseUniTableArn: !GetAtt DatabaseStack.Outputs.WiseUniTableArn
+        HomeworkBucketArn: !GetAtt StorageStack.Outputs.HomeworkBucketArn
 
-        # CHANGE: Full DynamoDB access for admins
-        - PolicyName: AdminDynamoDBAccess
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:*
-                Resource:
-                  - !GetAtt WiseUniTable.Arn
-                  - !Sub "${WiseUniTable.Arn}/index/*"
-
-  # ============================================================================
-  # Cognito User Pool
-  # ============================================================================
-
-  WiseUniUserPool:
-    Type: AWS::Cognito::UserPool
+  # ----- LAMBDA TRIGGERS STACK -----
+  # Note: This must be created BEFORE CognitoStack
+  LambdaTriggersStack:
+    Type: AWS::CloudFormation::Stack
     Properties:
-      UserPoolName: !Sub ${ProjectName}-user-pool-${Environment}
+      TemplateURL: stacks/lambda-triggers.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
 
-      # Username/Email configuration
-      UsernameAttributes:
-        - email
-      UsernameConfiguration:
-        CaseSensitive: false
-
-      # Password policy
-      Policies:
-        PasswordPolicy:
-          MinimumLength: 8
-          RequireUppercase: true
-          RequireLowercase: true
-          RequireNumbers: true
-          RequireSymbols: false
-          TemporaryPasswordValidityDays: 7
-
-      # Email verification
-      AutoVerifiedAttributes:
-        - email
-
-      # MFA configuration (optional)
-      MfaConfiguration: OPTIONAL
-      EnabledMfas:
-        - SOFTWARE_TOKEN_MFA
-
-      # Account recovery
-      AccountRecoverySetting:
-        RecoveryMechanisms:
-          - Name: verified_email
-            Priority: 1
-
-      # User attributes
-      Schema:
-        - Name: email
-          AttributeDataType: String
-          Required: true
-          Mutable: false
-        - Name: name
-          AttributeDataType: String
-          Required: true
-          Mutable: true
-        - Name: student_id
-          AttributeDataType: String
-          Mutable: true
-
-      # Lambda Triggers
-      LambdaConfig:
-        PreSignUp: !GetAtt PreSignupFunction.Arn
-        PostConfirmation: !GetAtt PostConfirmationFunction.Arn
-        PreAuthentication: !GetAtt PreAuthenticationFunction.Arn
-        CustomMessage: !GetAtt CustomMessageFunction.Arn
-
-      # Advanced security (adaptive authentication)
-      UserPoolAddOns:
-        # If student normally logs in from UK, then suddenly from Russia → Block!
-        AdvancedSecurityMode: ENFORCED
-
-  # ============================================================================
-  # User Pool Domain (for Hosted UI)
-  # ============================================================================
-
-  WiseUniUserPoolDomain:
-    Type: AWS::Cognito::UserPoolDomain
-    Properties:
-      Domain: !Sub ${ProjectName}-students-${Environment}-${AWS::AccountId}
-      UserPoolId: !Ref WiseUniUserPool
-
-  # ============================================================================
-  # User Pool Client (App Client)
-  # ============================================================================
-
-  WiseUniUserPoolClient:
-    Type: AWS::Cognito::UserPoolClient
-    Properties:
-      ClientName: !Sub ${ProjectName}-web-client-${Environment}
-      UserPoolId: !Ref WiseUniUserPool
-      GenerateSecret: false
-
-      # OAuth configuration for Hosted UI
-      AllowedOAuthFlows:
-        - code
-      AllowedOAuthScopes:
-        - email
-        - openid
-        - profile
-      AllowedOAuthFlowsUserPoolClient: true
-
-      # Callback URLs
-      CallbackURLs:
-        - http://localhost:5173/callback # Vite default port
-        - http://localhost:3000/callback
-        - !Sub https://app.${ProjectName}.com/callback
-
-      LogoutURLs:
-        - http://localhost:5173/ # Vite default port
-        - http://localhost:3000/
-        - !Sub https://app.${ProjectName}.com/
-
-      # Supported identity providers
-      SupportedIdentityProviders:
-        - COGNITO
-
-      # Token validity
-      AccessTokenValidity: 1
-      IdTokenValidity: 1
-      RefreshTokenValidity: 1
-      TokenValidityUnits:
-        AccessToken: hours
-        IdToken: hours
-        RefreshToken: days
-
-      #  Return ID token (required)
-      ExplicitAuthFlows:
-        - ALLOW_USER_SRP_AUTH
-        - ALLOW_REFRESH_TOKEN_AUTH
-        - ALLOW_USER_PASSWORD_AUTH
-        - ALLOW_CUSTOM_AUTH
-
-        # Prevent user existence errors (security)
-      PreventUserExistenceErrors: ENABLED
-
-      # ReadAttributes section - Cognito will default to allowing all attributes to be read
-      # WriteAttributes section - Cognito will default to allowing all mutable attributes to be written
-
-  # ============================================================================
-  # Cognito Identity Pool
-  # ============================================================================
-
-  WiseUniIdentityPool:
-    Type: AWS::Cognito::IdentityPool
-    Properties:
-      IdentityPoolName: !Sub ${ProjectName}_identity_pool_${Environment}
-      AllowUnauthenticatedIdentities: true # Guest access
-
-      # Link to User Pool
-      CognitoIdentityProviders:
-        - ClientId: !Ref WiseUniUserPoolClient
-          ProviderName: !GetAtt WiseUniUserPool.ProviderName
-
-  # ============================================================================
-  # IAM Roles for Identity Pool
-  # ============================================================================
-
-  # Authenticated user role
-  CognitoAuthenticatedRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${ProjectName}-authenticated-role-${Environment}
-
-      # Trust policy - Cognito Identity Pools can assume this role
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: cognito-identity.amazonaws.com
-            Action: sts:AssumeRoleWithWebIdentity
-            Condition:
-              StringEquals:
-                cognito-identity.amazonaws.com:aud: !Ref WiseUniIdentityPool
-              ForAnyValue:StringLike:
-                cognito-identity.amazonaws.com:amr: authenticated
-
-      # Policies with policy variables
-      Policies:
-        - PolicyName: AuthenticatedUserPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              # S3 access - list own folder
-              - Sid: ListOwnFolder
-                Effect: Allow
-                Action:
-                  - s3:ListBucket
-                Resource:
-                  - !GetAtt HomeworkBucket.Arn
-                Condition:
-                  StringLike:
-                    s3:prefix:
-                      - !Join
-                        - ""
-                        - - "$"
-                          - "{cognito-identity.amazonaws.com:sub}/*"
-
-              # S3 access - upload/download own files
-              - Sid: AccessOwnFiles
-                Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:PutObject
-                  - s3:DeleteObject
-                Resource:
-                  - !Sub
-                    - "${BucketArn}/${CognitoId}/*"
-                    - BucketArn: !GetAtt HomeworkBucket.Arn
-                      CognitoId:
-                        !Join [
-                          "",
-                          ["$", "{cognito-identity.amazonaws.com:sub}"],
-                        ]
-
-              # DynamoDB access - query own grades
-              - Sid: QueryOwnGrades
-                Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:Query
-                Resource:
-                  - !GetAtt GradesTable.Arn
-                Condition:
-                  ForAllValues:StringEquals:
-                    dynamodb:LeadingKeys:
-                      - !Join
-                        - ""
-                        - - "$"
-                          - "{cognito-identity.amazonaws.com:sub}"
-
-  # Unauthenticated (guest) user role
-  CognitoUnauthenticatedRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${ProjectName}-unauthenticated-role-${Environment}
-
-      # Trust policy for guests
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: cognito-identity.amazonaws.com
-            Action: sts:AssumeRoleWithWebIdentity
-            Condition:
-              StringEquals:
-                cognito-identity.amazonaws.com:aud: !Ref WiseUniIdentityPool
-              ForAnyValue:StringLike:
-                cognito-identity.amazonaws.com:amr: unauthenticated
-
-      # Guest user policy - very limited access
-      Policies:
-        - PolicyName: UnauthenticatedUserPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              # Guests can only read public folder
-              - Sid: ReadPublicCatalog
-                Effect: Allow
-                Action:
-                  - s3:GetObject
-                Resource:
-                  - !Sub ${HomeworkBucket.Arn}/public/*
-
-              - Sid: ListPublicCatalog
-                Effect: Allow
-                Action:
-                  - s3:ListBucket
-                Resource:
-                  - !GetAtt HomeworkBucket.Arn
-                Condition:
-                  StringLike:
-                    s3:prefix:
-                      - public/*
-
-  # Attach roles to Identity Pool
-  IdentityPoolRoleAttachment:
-    Type: AWS::Cognito::IdentityPoolRoleAttachment
-    Properties:
-      IdentityPoolId: !Ref WiseUniIdentityPool
-      Roles:
-        authenticated: !GetAtt CognitoAuthenticatedRole.Arn
-        unauthenticated: !GetAtt CognitoUnauthenticatedRole.Arn
-
-  # ============================================================================
-  # Lambda Functions (Triggers)
-  # ============================================================================
-
-  PreSignupFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${ProjectName}-pre-signup-${Environment}
-      CodeUri: backend/lambda/pre_signup/
-      Handler: index.handler
-      Description: Validates email domain before signup
-
-  PostConfirmationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${ProjectName}-post-confirmation-${Environment}
-      CodeUri: backend/lambda/post_confirmation/
-      Handler: index.handler
-      Description: Sends welcome email after confirmation
-      Policies:
-        - Version: "2012-10-17"
-          Statement:
-            - Effect: Allow
-              Action:
-                - ses:SendEmail
-                - ses:SendRawEmail
-              Resource:
-                - !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/wiseuni.co.uk"
-                - !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*@wiseuni.co.uk"
-                - !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*"
-
-  PreAuthenticationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${ProjectName}-pre-authentication-${Environment}
-      CodeUri: backend/lambda/pre_authentication/
-      Handler: index.handler
-      Description: Validates login during semester only
-
-  CustomMessageFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${ProjectName}-custom-message-${Environment}
-      CodeUri: backend/lambda/custom_message/
-      Handler: index.handler
-      Description: Customizes verification emails
-      Policies:
-        - Version: "2012-10-17"
-          Statement:
-            - Effect: Allow
-              Action:
-                - logs:CreateLogGroup
-                - logs:CreateLogStream
-                - logs:PutLogEvents
-              Resource: "*"
-
-  # Lambda permissions for Cognito to invoke
-  PreSignupPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref PreSignupFunction
-      Action: lambda:InvokeFunction
-      Principal: cognito-idp.amazonaws.com
-      SourceArn: !GetAtt WiseUniUserPool.Arn
-
-  PostConfirmationPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref PostConfirmationFunction
-      Action: lambda:InvokeFunction
-      Principal: cognito-idp.amazonaws.com
-      SourceArn: !GetAtt WiseUniUserPool.Arn
-
-  PreAuthenticationPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref PreAuthenticationFunction
-      Action: lambda:InvokeFunction
-      Principal: cognito-idp.amazonaws.com
-      SourceArn: !GetAtt WiseUniUserPool.Arn
-
-  CustomMessagePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref CustomMessageFunction
-      Action: lambda:InvokeFunction
-      Principal: cognito-idp.amazonaws.com
-      SourceArn: !GetAtt WiseUniUserPool.Arn
-
-  UpdateEmailTemplateFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${ProjectName}-update-email-template-${Environment}
-      CodeUri: backend/lambda/update_email_template/
-      Handler: index.handler
-      Runtime: python3.11
-      Timeout: 60
-      Policies:
-        - Statement:
-            - Effect: Allow
-              Action:
-                - cognito-idp:UpdateUserPool
-                - cognito-idp:DescribeUserPool
-              Resource: !GetAtt WiseUniUserPool.Arn
-
-  UpdateEmailTemplateResource:
-    Type: Custom::UpdateEmailTemplate
-    DependsOn: WiseUniUserPool
-    Properties:
-      ServiceToken: !GetAtt UpdateEmailTemplateFunction.Arn
-      UserPoolId: !Ref WiseUniUserPool
-
-  # ========================================
-  # COGNITO GROUPS (Existing)
-  # ========================================
-  StudentsGroup:
-    Type: AWS::Cognito::UserPoolGroup
-    Properties:
-      GroupName: students
-      UserPoolId: !Ref WiseUniUserPool
-      Description: Student users
-
-  ProfessorsGroup:
-    Type: AWS::Cognito::UserPoolGroup
-    Properties:
-      GroupName: professors
-      UserPoolId: !Ref WiseUniUserPool
-      Description: Professor users
-
-  AdminsGroup:
-    Type: AWS::Cognito::UserPoolGroup
-    Properties:
-      GroupName: admins
-      UserPoolId: !Ref WiseUniUserPool
-      Description: Admin users
-
-  # ============================================================================
-  # S3 Bucket for Homework
-  # ============================================================================
-
-  HomeworkBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub ${ProjectName}-homework-${Environment}-${AWS::AccountId}
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      VersioningConfiguration:
-        Status: Enabled
-      CorsConfiguration:
-        CorsRules:
-          - AllowedHeaders:
-              - "*"
-            AllowedMethods:
-              - GET
-              - PUT
-              - POST
-            AllowedOrigins:
-              - http://localhost:5173
-              - http://localhost:3000
-              - !Sub https://app.${ProjectName}.com
-            MaxAge: 3600
-
-# ============================================================================
-# Outputs
-# ============================================================================
-
+# Aggregated outputs from nested stacks
 Outputs:
-  # DynamoDB Table
-  WiseUniTableName:
-    Description: DynamoDB table for WiseUni data
-    Value: !Ref WiseUniTable
-    Export:
-      Name: !Sub ${ProjectName}-WiseUniTableName-${Environment}
-
-  # User Pool information
+  # Cognito
   UserPoolId:
     Description: Cognito User Pool ID
-    Value: !Ref WiseUniUserPool
-    Export:
-      Name: !Sub ${ProjectName}-UserPoolId-${Environment}
+    Value: !GetAtt CognitoStack.Outputs.UserPoolId
 
   UserPoolClientId:
     Description: Cognito User Pool Client ID
-    Value: !Ref WiseUniUserPoolClient
-    Export:
-      Name: !Sub ${ProjectName}-UserPoolClientId-${Environment}
+    Value: !GetAtt CognitoStack.Outputs.UserPoolClientId
 
-  UserPoolDomain:
-    Description: Cognito Hosted UI Domain
-    Value: !Sub ${ProjectName}-students-${Environment}-${AWS::AccountId}
-    Export:
-      Name: !Sub ${ProjectName}-UserPoolDomain-${Environment}
+  IdentityPoolId:
+    Description: Cognito Identity Pool ID
+    Value: !GetAtt CognitoStack.Outputs.IdentityPoolId
 
-  # Hosted UI URLs
   HostedUILoginURL:
     Description: Hosted UI Login URL
-    Value: !Sub https://${ProjectName}-students-${Environment}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${WiseUniUserPoolClient}&response_type=code&scope=email+openid+profile&redirect_uri=http://localhost:5173/callback
+    Value: !GetAtt CognitoStack.Outputs.HostedUILoginURL
 
-  # S3 Bucket
+  # Database
+  WiseUniTableName:
+    Description: DynamoDB Table Name
+    Value: !GetAtt DatabaseStack.Outputs.WiseUniTableName
+
+  # Storage
   HomeworkBucketName:
-    Description: S3 Bucket for homework uploads
-    Value: !Ref HomeworkBucket
-    Export:
-      Name: !Sub ${ProjectName}-HomeworkBucket-${Environment}
-
-  # DynamoDB Table
-  GradesTableName:
-    Description: DynamoDB table for student grades
-    Value: !Ref GradesTable
-    Export:
-      Name: !Sub ${ProjectName}-GradesTable-${Environment}
-
-  # IAM Roles
-  AuthenticatedRoleArn:
-    Description: IAM Role ARN for authenticated users
-    Value: !GetAtt CognitoAuthenticatedRole.Arn
-
-  UnauthenticatedRoleArn:
-    Description: IAM Role ARN for guest users
-    Value: !GetAtt CognitoUnauthenticatedRole.Arn
+    Description: S3 Bucket Name
+    Value: !GetAtt StorageStack.Outputs.HomeworkBucketName

@@ -1,0 +1,228 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: WiseUni - Cognito Authentication Stack
+
+Parameters:
+  ProjectName:
+    Type: String
+  Environment:
+    Type: String
+  PreSignUpFunctionArn:
+    Type: String
+    Default: ""
+  PostConfirmationFunctionArn:
+    Type: String
+    Default: ""
+  PreAuthenticationFunctionArn:
+    Type: String
+    Default: ""
+  CustomMessageFunctionArn:
+    Type: String
+    Default: ""
+
+Conditions:
+  HasPreSignUp: !Not [!Equals [!Ref PreSignUpFunctionArn, ""]]
+  HasPostConfirmation: !Not [!Equals [!Ref PostConfirmationFunctionArn, ""]]
+  HasPreAuthentication: !Not [!Equals [!Ref PreAuthenticationFunctionArn, ""]]
+  HasCustomMessage: !Not [!Equals [!Ref CustomMessageFunctionArn, ""]]
+
+Resources:
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${ProjectName}-user-pool-${Environment}
+
+      # Email as username
+      UsernameAttributes:
+        - email
+      UsernameConfiguration:
+        CaseSensitive: false
+
+      # Auto verify email
+      AutoVerifiedAttributes:
+        - email
+
+      # Password policy
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          TemporaryPasswordValidityDays: 7
+
+      # MFA configuration
+      MfaConfiguration: OPTIONAL
+      EnabledMfas:
+        - SOFTWARE_TOKEN_MFA
+
+      # Account recovery
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+
+      # User attributes
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+          Mutable: false
+        - Name: name
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+        - Name: student_id
+          AttributeDataType: String
+          Mutable: true
+
+      # Lambda Triggers (conditional)
+      LambdaConfig:
+        PreSignUp:
+          !If [HasPreSignUp, !Ref PreSignUpFunctionArn, !Ref "AWS::NoValue"]
+        PostConfirmation:
+          !If [
+            HasPostConfirmation,
+            !Ref PostConfirmationFunctionArn,
+            !Ref "AWS::NoValue",
+          ]
+        PreAuthentication:
+          !If [
+            HasPreAuthentication,
+            !Ref PreAuthenticationFunctionArn,
+            !Ref "AWS::NoValue",
+          ]
+        CustomMessage:
+          !If [
+            HasCustomMessage,
+            !Ref CustomMessageFunctionArn,
+            !Ref "AWS::NoValue",
+          ]
+
+      # Advanced security
+      UserPoolAddOns:
+        AdvancedSecurityMode: ENFORCED
+
+  # User pool domain (Hosted UI)
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub ${ProjectName}-${Environment}-${AWS::AccountId}
+      UserPoolId: !Ref UserPool
+
+  # User pool client
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub ${ProjectName}-web-client-${Environment}
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+
+      # OAuth configuration
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+
+      # Callback URLs
+      CallbackURLs:
+        - http://localhost:5173/callback
+        - http://localhost:3000/callback
+
+      LogoutURLs:
+        - http://localhost:5173/
+        - http://localhost:3000/
+
+      # Identity providers
+      SupportedIdentityProviders:
+        - COGNITO
+
+      # Token validity
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+
+      # Auth flows
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_CUSTOM_AUTH
+
+      PreventUserExistenceErrors: ENABLED
+
+  # Identity pool
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: !Sub ${ProjectName}_identity_pool_${Environment}
+      AllowUnauthenticatedIdentities: false
+
+      CognitoIdentityProviders:
+        - ClientId: !Ref UserPoolClient
+          ProviderName: !GetAtt UserPool.ProviderName
+
+  # User groups
+  StudentsGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: students
+      UserPoolId: !Ref UserPool
+      Description: Student users
+      Precedence: 3
+
+  ProfessorsGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: professors
+      UserPoolId: !Ref UserPool
+      Description: Professor users
+      Precedence: 2
+
+  AdminsGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: admins
+      UserPoolId: !Ref UserPool
+      Description: Admin users
+      Precedence: 1
+
+# Outputs
+Outputs:
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+
+  UserPoolArn:
+    Description: Cognito User Pool ARN
+    Value: !GetAtt UserPool.Arn
+
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref UserPoolClient
+
+  UserPoolProviderName:
+    Description: Cognito User Pool Provider Name
+    Value: !GetAtt UserPool.ProviderName
+
+  IdentityPoolId:
+    Description: Cognito Identity Pool ID
+    Value: !Ref IdentityPool
+
+  UserPoolDomain:
+    Description: Cognito Hosted UI Domain
+    Value: !Ref UserPoolDomain
+
+  HostedUILoginURL:
+    Description: Hosted UI Login URL
+    Value: !Sub
+      - "https://${Domain}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${ClientId}&response_type=code&scope=email+openid+profile&redirect_uri=http://localhost:5173/callback"
+      - Domain: !Ref UserPoolDomain
+        ClientId: !Ref UserPoolClient
