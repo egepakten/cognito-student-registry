@@ -1,83 +1,164 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVerision: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
+# Transform tells CloudFormation to use SAM (Serverless Application Model)
+# SAM is simplified way to define Lambda Functions
+# SAM transforms simple code into full Cloudformation
 Description: WiseUni - Lambda Triggers Stack
 
+# Parameters
 Parameters:
   ProjectName:
-    Type: String
+    Type: String # wiseuni
   Environment:
-    Type: String
+    Type: String # prod
+  # Also passed to Lambda as environment variable
 
+# Globals
+# Default settings applied to All lambda functions in this template
+# Avoiding the same config for each function
+# SAM specific feature not available for Cloudformation
 Globals:
-  Function:
-    Runtime: python3.11
-    Timeout: 30
-    MemorySize: 256
-    Environment:
-      Variables:
-        ENVIRONMENT: !Ref Environment
-        LOG_LEVEL: INFO
+  # Runtime
+  Runtime: python3.11 # Great for AWS SDK boto3
+
+  # Timeout
+  Timeout: 30
+  # Maximum seconds the function can run (then its killed)
+  # Default is 3 second too short for most real work
+  # Max is 900 seconds (15 minutes)
+  # Memory
+
+  MemorySize: 256
+  # RAM allocated to the function in MB
+  # Min: 128 MB, Max: 10,240 MB
+  # More memory = more CPU (they're linked in Lambda)
+  # 256 MB is good for simple Python scripts
+
+  # Environment Variables
+  Environment:
+    Variables:
+      ENVIRONMENT: !Ref Environment
+      # Available in Python as: os.environ['ENVIRONMENT']
+      # Lets the code knows if running in dev or prod
+      LOG_LEVEL: INFO
+      # How much detail do you want to see in logs?
+      # DEBUG = Everything, INFO = Important, ERROR = Problems only, WARNING = Potential problems, CRITICAL = App is crashing
 
 Resources:
-  # PRE-SIGNUP FUNCTION
+  # PRE-SIGNUP Function
+  # User clicks "Sign UP" -> 1. Pre_SIGNUP Lambda -> Cognito creates user account
+  # Use Cases :
+  # - Validate email domain (@wiseuni.com only)
+  # - Check if user is in approved list
+  # - Auto verify email (skip verification step)
+  # - Auto-confirm user (skip admin approval)
+  # - Block specific emails/domains
+  # If Lambda throws error -> SignUp is REJECTED
+  # If Lambda return successfully -> SignUp Proceeds
   PreSignUpFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${ProjectName}-pre-signup-${Environment}
-      CodeUri: ../lambda/pre_signup/
+      FunctionName: !Sub ${ProjectName}-pre-signup-${Environment} # wiseuni-pre-signup-prod
+      CodeUri: ../lambda/pre_signup/ # Path to the folder containing the lambda code
+      # Must contain index.py (or whatever Handler specifies)
       Handler: index.handler
+      # Which function to call
+      # Format: filename.function_name
+      # "index.handler" means: in index.py, call the handler() function
       Description: Validates email domain before signup
 
-  # POST-CONFIRMATION FUNCTION
+  # Post-Confirmation Function
+  # Runs after the user verifies their email (by clicking confirmation email or enter code)
+  # Use Cases:
+  # - Send personalized welcome email
+  # - Create user profile in DynamoDB
+  # - Add user to default group
+  # - Initialize default settings
+  # - Log signup event for analytics
+  # - Notify admin of new signup
+  # User is already created can not reject them
   PostConfirmationFunction:
-    Type: AWS::Serverless::Function
+    Type: AWS ::Serverless::Function
     Properties:
-      FunctionName: !Sub ${ProjectName}-post-confirmation-${Environment}
+      FunctionName: !Sub ${ProjectName}-post-confirmation-${Environment} # wiseuni-post-confirmation-dev
       CodeUri: ../lambda/post_confirmation/
       Handler: index.handler
-      Description: Sends welcome email after confirmation
+      Description: Sends Welcome email after confirmation
+
+      # Policies - IAM Permissions for this Lambda
+      # This function needs to SEND Emails via SES
+      # Without this Policy, the lambda would get "Access denied"
       Policies:
         - Version: "2012-10-17"
           Statement:
             - Effect: Allow
               Action:
-                - ses:SendEmail
-                - ses:SendRawEmail
-              Resource: "*"
+                - ses:SendEmail # Send Formated emails
+                - ses: SendRawEmail # Send raw email (with attachment)
+              Resource: "*" # Any ses identity
+              # prod stage it could be directed to specific resource such as Resource: "arn:aws:ses:eu-west-2:123456789:identity/wiseuni.com"
 
-  # PRE-AUTHENTICATION FUNCTION
+  # Pre-authentication Function
+  # Runs before user is authenticated (after password check passes)
+  # Use Cases:
+  # - block logins outside semester dates
+  # - Implement custom rate limiting
+  # - Check if user suspended/banned
+  # - Validate IP address /location
+  # - Force Password change after certion period
+  # - Log login attempts for security
+  # If Lambda throws error → Login is REJECTED (even with correct password!)
+  # If Lambda returns successfully → Login proceeds
   PreAuthenticationFunction:
-    Type: AWS::Serverless::Function
+    Type: AWS ::Serverless:: Function
     Properties:
-      FunctionName: !Sub ${ProjectName}-pre-auth-${Environment}
+      FunctionName: !Sub ${ProjectName}-pre-auth-${Environment} # wiseuni-pre-auth-dev
       CodeUri: ../lambda/pre_authentication/
       Handler: index.handler
       Description: Validates login conditions
-
-  # CUSTOM MESSAGE FUNCTION
+      # No special policies needed - just basic Lambda execution
+      # SAM automatically adds AWSLambdaBasicExecutionRole
+      # (permission to write logs to CloudWatch)
+  
+  # Custom message function
+  # Runs when cognito needs to send any email or SMS
+  # Trigeer Sources (when this run):
+  # CustomMessage_SignUp -> verification code email
+  # CustomMessage_ForgotPassword -> Password reset code email
+  # CustomMessage_ResendCode -> Resend verification code
+  # CustomMessage_AdminCreateUser -> Admin created user temporary password
+  # CustomMessage_UpdateUserAttribute -> Email change verification
+  # CustomMessage_VerifyUserAttribute -> Verify new email/phone
+  #
+  # Use Cases:
+  # - Add your logo and branding to emails
+  # - Translate messages to users language
+  # - Include additional instructions
+  # - Change email subject lines
+  # - Format verification codes nicely
   CustomMessageFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${ProjectName}-custom-message-${Environment}
+      FunctionName: !Sub ${ProjectName}-custom-message-${Environment} # wiseuni-custom-message-dev
       CodeUri: ../lambda/custom_message/
       Handler: index.handler
       Description: Customizes email templates
-
-# Outputs
+      # No special policies needed
+      # Just modifies the message content doesnt calls other services
+# Function ARNs are exported so Cognito can invoke them
+# cognito.yaml stack needs these ARNs to configure Lambda triggers
 Outputs:
   PreSignUpFunctionArn:
     Description: Pre-Signup Function ARN
-    Value: !GetAtt PreSignUpFunction.Arn
-
+    Value: !GetAtt PreSignUpFunction.Arn # Example: "arn:aws:lambda:eu-west-2:123456789:function:wiseuni-pre-signup-dev"
   PostConfirmationFunctionArn:
     Description: Post-Confirmation Function ARN
     Value: !GetAtt PostConfirmationFunction.Arn
-
+    
   PreAuthenticationFunctionArn:
     Description: Pre-Authentication Function ARN
     Value: !GetAtt PreAuthenticationFunction.Arn
-
+    
   CustomMessageFunctionArn:
     Description: Custom Message Function ARN
     Value: !GetAtt CustomMessageFunction.Arn
-isual Summary
