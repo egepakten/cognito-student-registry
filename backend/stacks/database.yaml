@@ -1,72 +1,146 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: WiseUni - Database Stack (DynamoDB)
 
+# Parameters => Variables Pass from the template.yaml
 Parameters:
   ProjectName:
-    Type: String
+    Type: String # "wiseuni"
+
   Environment:
-    Type: String
+    Type: String # dev", "staging", "prod", Keeps dev/prod data completely separate
 
 Resources:
-  # Main data table (Single-Table Design)
+  # DynamoDB Table = NoSql database
+  # Unlike SQL database:
+  # - Each item can have different attributes
+  # - No JOINS
+  # - Scales Automatically
+  # - Pay per Request
   WiseUniTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub ${ProjectName}-data-${Environment}
-      BillingMode: PAY_PER_REQUEST
+    TableName: !Sub ${ProjectName}-data-${Environment} # "wiseuni-data-dev"
 
-      # Key Schema
-      AttributeDefinitions:
-        - AttributeName: PK
-          AttributeType: S
-        - AttributeName: SK
-          AttributeType: S
-        - AttributeName: GSI1PK
-          AttributeType: S
-        - AttributeName: GSI1SK
-          AttributeType: S
+    # Billing Mode
+    BillingMode: PAY_PER_REQUEST
+    # Two options:
+    # 1. PAY_PER_REQUEST (OnDemand)
+    # - Pay for reads/writes you actually use
+    # No capacity planning needed
+    # Auto Scales instantly
+    # Best for unpredictable workloads, learning, development
+    # 2. PROVISIONED
+    # - You specify Read/Write Capacity Units
+    # - Cheaper if you have predictable, steady traffic
+    # - Can auto scale, but with some delay
+    # - Best for: Production with predictable traffic
 
-      KeySchema:
-        - AttributeName: PK
-          KeyType: HASH
-        - AttributeName: SK
-          KeyType: RANGE
+    # Attribute Definitions
+    AttributeDefinitions:
+      # Primary Key Attributes
+      - AttributeName: PK # Partion Key (Main Key)
+        AttributeType: S # s = String
+      # Sort Key
+      - AttributeName: SK
+        AttributeName: S
+      # SK = Sort Key (Secondary Key within partition)
+      # Examples: "PROFILE", "ENROLLMENT#CS101","GRADE#2024"
+      # ---- GSI KEY Attributes ----
+      - AttributeName: GSIPK
+        AttributeType: S
+      # Allows Querying Data Differently
+      - AttributeName: GSI1SK # Global Secondary Partition Key
+        AttributeType: S
+      # Example: Example: "STUDENT#abc123"
+      
+    # Key Schema (Primary key)
+    # Primary Key uniquely identifies each item in the table
+    # We are using COMPOSITE KEY (Partition Key + Sort Key)
+    # This is the most flexible design for single-table patterns
+    KeySchema:
+      - AttributeName: PK 
+        KeyType: HASH # HASH = Partition Key
+        # The Partition key determines WHICH PARTITION stores the data
+        # Items with same PK are stored together (fast to query together)
+      - AttributeName: SK
+        KeyType: RANGE # RANGE = Sort Key
+       # Within a partition, items are sorted by SK
+       # Enables range queries : "Get all items where SK starts with X"
+    # PARTITION KEY (PK) = Which drawer? 
+    # SORT KEY (SK)      = Which folder in that drawer? 
+    # Drawer: USER#kerem-123 (PK)   
+    # ├── Folder: PROFILE         → { name: "Kerem", email: "..." } 
+    # ├── Folder: ENROLLMENT#CS101 → { grade: "A", semester: "F24" }
+    # Global Secondary Indexes
+    # A GSA is the second primary key for the same data
+    # Allows you to query data in different way
+    # Without GSI: Can only query by PK (and Optionally SK)
+    # With GSI: Can also query by GSI1PK (and optionally GSI1SK)
+    GlobalSecondaryIndexes:
+      - IndexName: GSI1
+        KeySchema:
+          - AttributeName: GSI1PK
+            KeyType: HASH
+          - AttributeName: GSI1SK
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+          # ALL = Copy ALL attributes to the index
+          # Other options:
+          # - Keys_only = Only copy key attributes (smaller,cheapest)
+          # - Include = Copy specific attributes you list
+    
+    # Dynamo Streams
+    # Streams real time log of all changes to the table
+    # When data changes (insert,update,delete) the change is recorded in a stream.
+    # Lambda functions can then process these changes.
+    StreamSpecification:
+      StreamViewType: NEW_AND_OLD_IMAGES
+      # What data is captured in the stream:
+      # KEYS_ONLY -> Only the key attributes (PK, SK)
+      # NEW_IMAGE -> The item AFTER the change
+      # OLD_IMAGE -> The item BEFORE the change
+      # NEW_AND_OLD_IMAGES -> Both before AND after (most useful!)
+    
+    # POINT-IN_TIME Recovery (PITR)
+    # Automatic continuous backups - restore to ANY second in last 35 days
+    PointInTimeRecoverySpecification:
+      PointInTimeRecoveryEnabled: true
+    # Without PITR : Accidentally delete data -> Gone Forever
+    # With PITR: Accidentally delete data -> Restore to 1 second before deletion
+    # Restore creates a NEW table with data from that point in time, Original table is NOT modified
 
-      # Global Secondary Index
-      GlobalSecondaryIndexes:
-        - IndexName: GSI1
-          KeySchema:
-            - AttributeName: GSI1PK
-              KeyType: HASH
-            - AttributeName: GSI1SK
-              KeyType: RANGE
-          Projection:
-            ProjectionType: ALL
+    # Tags = metadata labels attached to the resource
+    # User for organisation, cost tracking and Access control
+    Tags:
+      - Key: Project
+        Value: !Ref ProjectName # wiseuni
+      - Key: Environment
+        Value: !Ref Environment # dev
+    # Why Tags ?
+    # 1. Cost Tracking = AWS Cost Explorer can show: "How much did wiseuni-dev cost this month?"
+    # 2. Organization = Filter resources in Console: Show only "Environment: prod" resources
+    # 3. Access Control = IAM Policies can restrict: "Only allow access to Environment: dev resources"
 
-      # Enable streams for real-time updates
-      StreamSpecification:
-        StreamViewType: NEW_AND_OLD_IMAGES
-
-      # Point-in-time recovery (backup)
-      PointInTimeRecoverySpecification:
-        PointInTimeRecoveryEnabled: true
-
-      Tags:
-        - Key: Project
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
-
-# Outputs
+# Values that other stacks and frontend need
 Outputs:
   WiseUniTableName:
     Description: DynamoDB Table Name
     Value: !Ref WiseUniTable
-
+    # Returns: "wiseuni-data-dev"
+    # WHO NEEDS IT:
+    # - Frontend (to call DynamoDB SDK)
+    # - Lambda functions (to know which table to query)
   WiseUniTableArn:
     Description: DynamoDB Table ARN
-    Value: !GetAtt WiseUniTable.Arn
-
+    Value: !GetAtt WiseUniTable.Arn # Returns: "arn:aws:dynamodb:eu-west-2:123456789:table/wiseuni-data-dev"
+    # Who needs it ?
+    # - IAM Roles (to grant permissions to this specific table)
+    # - IAM policies use ARNs, not names
   WiseUniTableStreamArn:
-    Description: DynamoDB Stream ARN
+    Description: DynamoDB Stream Arn
     Value: !GetAtt WiseUniTable.StreamArn
+    # Returns: "arn:aws:dynamodb:eu-west-2:123456789:table/wiseuni-data-dev/stream/2024-..."
+    # Who needs it ?
+    # - Lambda functions that process stream events
+    # - Event source mapping configuration

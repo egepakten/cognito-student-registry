@@ -410,3 +410,35 @@ Created as a comprehensive learning demonstration of AWS Cognito integration cap
 │ │ • PreAuthentication │ │
 │ │ • CustomMessage │ │
 │ └─────────────────────┘
+
+# 1. SIGNUP (one time)
+
+    User signs up
+    │
+    ▼
+    PreSignUp Lambda ──────────► Validate email domain
+    │
+    ▼
+    User receives verification email
+    │
+    ▼
+    User enters code
+    │
+    ▼
+    PostConfirmation Lambda ───► Create DB record
+    │
+    ▼
+    Account created ✅
+
+2. LOGIN (every time user logs in):
+
+   User enters email + password
+   │
+   ▼
+   Cognito checks password ✅
+   │
+   ▼
+   PreAuthentication Lambda ──► Check if banned, rate limit
+   │
+   ▼
+   Login successful ✅ (or blocked ❌)
