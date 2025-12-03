@@ -1,13 +1,12 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: WiseUni - Main Stack (imports all nested stacks)
+Description: WiseUni - Main Stack (Nested Stacks)
 
 Parameters:
   ProjectName:
     Type: String
     Default: wiseuni
-    Description: Project name prefix for resources
-
+    Description: Project name used for resource naming
   Environment:
     Type: String
     Default: dev
@@ -15,60 +14,11 @@ Parameters:
       - dev
       - staging
       - prod
-    Description: Environment name
+    Description: Environment name (dev, staging, prod)
 
-# NESTED STACKS
 Resources:
-  # ----- COGNITO STACK -----
-  CognitoStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: stacks/cognito.yaml
-      Parameters:
-        ProjectName: !Ref ProjectName
-        Environment: !Ref Environment
-        # Pass Lambda ARNs for triggers
-        PreSignUpFunctionArn: !GetAtt LambdaTriggersStack.Outputs.PreSignUpFunctionArn
-        PostConfirmationFunctionArn: !GetAtt LambdaTriggersStack.Outputs.PostConfirmationFunctionArn
-        PreAuthenticationFunctionArn: !GetAtt LambdaTriggersStack.Outputs.PreAuthenticationFunctionArn
-        CustomMessageFunctionArn: !GetAtt LambdaTriggersStack.Outputs.CustomMessageFunctionArn
-
-  # ----- DATABASE STACK -----
-  DatabaseStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: stacks/database.yaml
-      Parameters:
-        ProjectName: !Ref ProjectName
-        Environment: !Ref Environment
-
-  # ----- STORAGE STACK -----
-  StorageStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: stacks/storage.yaml
-      Parameters:
-        ProjectName: !Ref ProjectName
-        Environment: !Ref Environment
-
-  # ----- IAM ROLES STACK -----
-  IAMRolesStack:
-    Type: AWS::CloudFormation::Stack
-    DependsOn:
-      - CognitoStack
-      - DatabaseStack
-      - StorageStack
-    Properties:
-      TemplateURL: stacks/iam-roles.yaml
-      Parameters:
-        ProjectName: !Ref ProjectName
-        Environment: !Ref Environment
-        IdentityPoolId: !GetAtt CognitoStack.Outputs.IdentityPoolId
-        WiseUniTableArn: !GetAtt DatabaseStack.Outputs.WiseUniTableArn
-        HomeworkBucketArn: !GetAtt StorageStack.Outputs.HomeworkBucketArn
-
-  # ----- LAMBDA TRIGGERS STACK -----
-  # Note: This must be created BEFORE CognitoStack
+  # LAMBDA TRIGGERS STACK (must be created FIRST)
+  # Lambda functions must exist before Cognito User Pool can reference them
   LambdaTriggersStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -76,32 +26,149 @@ Resources:
       Parameters:
         ProjectName: !Ref ProjectName
         Environment: !Ref Environment
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
 
-# Aggregated outputs from nested stacks
+  # COGNITO STACK
+  # User Pool and Identity Pool for authentication
+  CognitoStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/cognito.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        PreSignUpFunctionArn: !GetAtt LambdaTriggersStack.Outputs.PreSignUpFunctionArn
+        PostConfirmationFunctionArn: !GetAtt LambdaTriggersStack.Outputs.PostConfirmationFunctionArn
+        PreAuthenticationFunctionArn: !GetAtt LambdaTriggersStack.Outputs.PreAuthenticationFunctionArn
+        CustomMessageFunctionArn: !GetAtt LambdaTriggersStack.Outputs.CustomMessageFunctionArn
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # DATABASE STACK
+  # DynamoDB table for application data
+  DatabaseStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/database.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # STORAGE STACK
+  # S3 bucket for file uploads
+  StorageStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/storage.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # IAM ROLES STACK
+  # IAM roles for fine-grained access control
+  # Dependencies are automatically enforced by !GetAtt references below
+  IAMRolesStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/iam-roles.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        # These !GetAtt calls automatically create dependencies
+        # CloudFormation knows to wait for these stacks to finish
+        IdentityPoolId: !GetAtt CognitoStack.Outputs.IdentityPoolId
+        WiseUniTableArn: !GetAtt DatabaseStack.Outputs.WiseUniTableArn
+        HomeworkBucketArn: !GetAtt StorageStack.Outputs.HomeworkBucketArn
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
 Outputs:
-  # Cognito
+  # COGNITO OUTPUTS
   UserPoolId:
     Description: Cognito User Pool ID
     Value: !GetAtt CognitoStack.Outputs.UserPoolId
+    Export:
+      Name: !Sub ${ProjectName}-UserPoolId-${Environment}
 
   UserPoolClientId:
     Description: Cognito User Pool Client ID
     Value: !GetAtt CognitoStack.Outputs.UserPoolClientId
+    Export:
+      Name: !Sub ${ProjectName}-UserPoolClientId-${Environment}
 
   IdentityPoolId:
     Description: Cognito Identity Pool ID
     Value: !GetAtt CognitoStack.Outputs.IdentityPoolId
+    Export:
+      Name: !Sub ${ProjectName}-IdentityPoolId-${Environment}
 
-  HostedUILoginURL:
-    Description: Hosted UI Login URL
-    Value: !GetAtt CognitoStack.Outputs.HostedUILoginURL
+  UserPoolDomain:
+    Description: Cognito User Pool Domain
+    Value: !GetAtt CognitoStack.Outputs.UserPoolDomain
+    Export:
+      Name: !Sub ${ProjectName}-UserPoolDomain-${Environment}
 
-  # Database
+  # DATABASE OUTPUTS
   WiseUniTableName:
     Description: DynamoDB Table Name
     Value: !GetAtt DatabaseStack.Outputs.WiseUniTableName
+    Export:
+      Name: !Sub ${ProjectName}-TableName-${Environment}
 
-  # Storage
+  WiseUniTableArn:
+    Description: DynamoDB Table ARN
+    Value: !GetAtt DatabaseStack.Outputs.WiseUniTableArn
+    Export:
+      Name: !Sub ${ProjectName}-TableArn-${Environment}
+
+  # STORAGE OUTPUTS
   HomeworkBucketName:
     Description: S3 Bucket Name
     Value: !GetAtt StorageStack.Outputs.HomeworkBucketName
+    Export:
+      Name: !Sub ${ProjectName}-BucketName-${Environment}
+
+  HomeworkBucketArn:
+    Description: S3 Bucket ARN
+    Value: !GetAtt StorageStack.Outputs.HomeworkBucketArn
+    Export:
+      Name: !Sub ${ProjectName}-BucketArn-${Environment}
+
+  # IAM OUTPUTS
+  StudentRoleArn:
+    Description: Student IAM Role ARN
+    Value: !GetAtt IAMRolesStack.Outputs.StudentRoleArn
+    Export:
+      Name: !Sub ${ProjectName}-StudentRoleArn-${Environment}
+
+  ProfessorRoleArn:
+    Description: Professor IAM Role ARN
+    Value: !GetAtt IAMRolesStack.Outputs.ProfessorRoleArn
+    Export:
+      Name: !Sub ${ProjectName}-ProfessorRoleArn-${Environment}
+
+  AdminRoleArn:
+    Description: Admin IAM Role ARN
+    Value: !GetAtt IAMRolesStack.Outputs.AdminRoleArn
+    Export:
+      Name: !Sub ${ProjectName}-AdminRoleArn-${Environment}

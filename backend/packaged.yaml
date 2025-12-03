@@ -1,0 +1,225 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: WiseUni - Main Stack (Nested Stacks)
+Parameters:
+  ProjectName:
+    Type: String
+    Default: wiseuni
+    Description: Project name used for resource naming
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+    - dev
+    - staging
+    - prod
+    Description: Environment name (dev, staging, prod)
+Resources:
+  LambdaTriggersStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/00294b77bd734beb34b0ed39bba5a34f.template
+      Parameters:
+        ProjectName:
+          Ref: ProjectName
+        Environment:
+          Ref: Environment
+      Tags:
+      - Key: Project
+        Value:
+          Ref: ProjectName
+      - Key: Environment
+        Value:
+          Ref: Environment
+  CognitoStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/d74205ba5928cf2f4842b0634dc06d75.template
+      Parameters:
+        ProjectName:
+          Ref: ProjectName
+        Environment:
+          Ref: Environment
+        PreSignUpFunctionArn:
+          Fn::GetAtt:
+          - LambdaTriggersStack
+          - Outputs.PreSignUpFunctionArn
+        PostConfirmationFunctionArn:
+          Fn::GetAtt:
+          - LambdaTriggersStack
+          - Outputs.PostConfirmationFunctionArn
+        PreAuthenticationFunctionArn:
+          Fn::GetAtt:
+          - LambdaTriggersStack
+          - Outputs.PreAuthenticationFunctionArn
+        CustomMessageFunctionArn:
+          Fn::GetAtt:
+          - LambdaTriggersStack
+          - Outputs.CustomMessageFunctionArn
+      Tags:
+      - Key: Project
+        Value:
+          Ref: ProjectName
+      - Key: Environment
+        Value:
+          Ref: Environment
+  DatabaseStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/4970ded6c648df56bed465a46f6fce01.template
+      Parameters:
+        ProjectName:
+          Ref: ProjectName
+        Environment:
+          Ref: Environment
+      Tags:
+      - Key: Project
+        Value:
+          Ref: ProjectName
+      - Key: Environment
+        Value:
+          Ref: Environment
+  StorageStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/4e829a411a22ab1b6c5baed0dbf8f1ba.template
+      Parameters:
+        ProjectName:
+          Ref: ProjectName
+        Environment:
+          Ref: Environment
+      Tags:
+      - Key: Project
+        Value:
+          Ref: ProjectName
+      - Key: Environment
+        Value:
+          Ref: Environment
+  IAMRolesStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/dad3b8fa54b968dd9fff6057a28e2de2.template
+      Parameters:
+        ProjectName:
+          Ref: ProjectName
+        Environment:
+          Ref: Environment
+        IdentityPoolId:
+          Fn::GetAtt:
+          - CognitoStack
+          - Outputs.IdentityPoolId
+        WiseUniTableArn:
+          Fn::GetAtt:
+          - DatabaseStack
+          - Outputs.WiseUniTableArn
+        HomeworkBucketArn:
+          Fn::GetAtt:
+          - StorageStack
+          - Outputs.HomeworkBucketArn
+      Tags:
+      - Key: Project
+        Value:
+          Ref: ProjectName
+      - Key: Environment
+        Value:
+          Ref: Environment
+Outputs:
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value:
+      Fn::GetAtt:
+      - CognitoStack
+      - Outputs.UserPoolId
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-UserPoolId-${Environment}
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value:
+      Fn::GetAtt:
+      - CognitoStack
+      - Outputs.UserPoolClientId
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-UserPoolClientId-${Environment}
+  IdentityPoolId:
+    Description: Cognito Identity Pool ID
+    Value:
+      Fn::GetAtt:
+      - CognitoStack
+      - Outputs.IdentityPoolId
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-IdentityPoolId-${Environment}
+  UserPoolDomain:
+    Description: Cognito User Pool Domain
+    Value:
+      Fn::GetAtt:
+      - CognitoStack
+      - Outputs.UserPoolDomain
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-UserPoolDomain-${Environment}
+  WiseUniTableName:
+    Description: DynamoDB Table Name
+    Value:
+      Fn::GetAtt:
+      - DatabaseStack
+      - Outputs.WiseUniTableName
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-TableName-${Environment}
+  WiseUniTableArn:
+    Description: DynamoDB Table ARN
+    Value:
+      Fn::GetAtt:
+      - DatabaseStack
+      - Outputs.WiseUniTableArn
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-TableArn-${Environment}
+  HomeworkBucketName:
+    Description: S3 Bucket Name
+    Value:
+      Fn::GetAtt:
+      - StorageStack
+      - Outputs.HomeworkBucketName
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-BucketName-${Environment}
+  HomeworkBucketArn:
+    Description: S3 Bucket ARN
+    Value:
+      Fn::GetAtt:
+      - StorageStack
+      - Outputs.HomeworkBucketArn
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-BucketArn-${Environment}
+  StudentRoleArn:
+    Description: Student IAM Role ARN
+    Value:
+      Fn::GetAtt:
+      - IAMRolesStack
+      - Outputs.StudentRoleArn
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-StudentRoleArn-${Environment}
+  ProfessorRoleArn:
+    Description: Professor IAM Role ARN
+    Value:
+      Fn::GetAtt:
+      - IAMRolesStack
+      - Outputs.ProfessorRoleArn
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-ProfessorRoleArn-${Environment}
+  AdminRoleArn:
+    Description: Admin IAM Role ARN
+    Value:
+      Fn::GetAtt:
+      - IAMRolesStack
+      - Outputs.AdminRoleArn
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-AdminRoleArn-${Environment}

@@ -1,4 +1,4 @@
-AWSTemplateFormatVerision: "2010-09-09"
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 # Transform tells CloudFormation to use SAM (Serverless Application Model)
 # SAM is simplified way to define Lambda Functions
@@ -19,30 +19,31 @@ Parameters:
 # SAM specific feature not available for Cloudformation
 Globals:
   # Runtime
-  Runtime: python3.11 # Great for AWS SDK boto3
+  Function:
+    Runtime: python3.11 # Great for AWS SDK boto3
 
-  # Timeout
-  Timeout: 30
-  # Maximum seconds the function can run (then its killed)
-  # Default is 3 second too short for most real work
-  # Max is 900 seconds (15 minutes)
-  # Memory
+    # Timeout
+    Timeout: 30
+    # Maximum seconds the function can run (then its killed)
+    # Default is 3 second too short for most real work
+    # Max is 900 seconds (15 minutes)
+    # Memory
 
-  MemorySize: 256
-  # RAM allocated to the function in MB
-  # Min: 128 MB, Max: 10,240 MB
-  # More memory = more CPU (they're linked in Lambda)
-  # 256 MB is good for simple Python scripts
+    MemorySize: 256
+    # RAM allocated to the function in MB
+    # Min: 128 MB, Max: 10,240 MB
+    # More memory = more CPU (they're linked in Lambda)
+    # 256 MB is good for simple Python scripts
 
-  # Environment Variables
-  Environment:
-    Variables:
-      ENVIRONMENT: !Ref Environment
-      # Available in Python as: os.environ['ENVIRONMENT']
-      # Lets the code knows if running in dev or prod
-      LOG_LEVEL: INFO
-      # How much detail do you want to see in logs?
-      # DEBUG = Everything, INFO = Important, ERROR = Problems only, WARNING = Potential problems, CRITICAL = App is crashing
+    # Environment Variables
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+        # Available in Python as: os.environ['ENVIRONMENT']
+        # Lets the code knows if running in dev or prod
+        LOG_LEVEL: INFO
+        # How much detail do you want to see in logs?
+        # DEBUG = Everything, INFO = Important, ERROR = Problems only, WARNING = Potential problems, CRITICAL = App is crashing
 
 Resources:
   # PRE-SIGNUP Function
@@ -78,7 +79,7 @@ Resources:
   # - Notify admin of new signup
   # User is already created can not reject them
   PostConfirmationFunction:
-    Type: AWS ::Serverless::Function
+    Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${ProjectName}-post-confirmation-${Environment} # wiseuni-post-confirmation-dev
       CodeUri: ../lambda/post_confirmation/
@@ -94,7 +95,7 @@ Resources:
             - Effect: Allow
               Action:
                 - ses:SendEmail # Send Formated emails
-                - ses: SendRawEmail # Send raw email (with attachment)
+                - ses:SendRawEmail # Send raw email (with attachment)
               Resource: "*" # Any ses identity
               # prod stage it could be directed to specific resource such as Resource: "arn:aws:ses:eu-west-2:123456789:identity/wiseuni.com"
 
@@ -110,7 +111,7 @@ Resources:
   # If Lambda throws error → Login is REJECTED (even with correct password!)
   # If Lambda returns successfully → Login proceeds
   PreAuthenticationFunction:
-    Type: AWS ::Serverless:: Function
+    Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${ProjectName}-pre-auth-${Environment} # wiseuni-pre-auth-dev
       CodeUri: ../lambda/pre_authentication/
@@ -119,7 +120,7 @@ Resources:
       # No special policies needed - just basic Lambda execution
       # SAM automatically adds AWSLambdaBasicExecutionRole
       # (permission to write logs to CloudWatch)
-  
+
   # Custom message function
   # Runs when cognito needs to send any email or SMS
   # Trigeer Sources (when this run):
@@ -154,11 +155,11 @@ Outputs:
   PostConfirmationFunctionArn:
     Description: Post-Confirmation Function ARN
     Value: !GetAtt PostConfirmationFunction.Arn
-    
+
   PreAuthenticationFunctionArn:
     Description: Pre-Authentication Function ARN
     Value: !GetAtt PreAuthenticationFunction.Arn
-    
+
   CustomMessageFunctionArn:
     Description: Custom Message Function ARN
     Value: !GetAtt CustomMessageFunction.Arn

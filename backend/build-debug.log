@@ -1,0 +1,95 @@
+2025-12-03 20:57:56,501 | Config file location: /Users/EgePakten/Desktop/Projects/cognito-student-registry/backend/samconfig.toml
+2025-12-03 20:57:56,501 | Loading configuration values from [default.['build'].parameters] (env.command_name.section) in config file at '/Users/EgePakten/Desktop/Projects/cognito-student-registry/backend/samconfig.toml'...
+2025-12-03 20:57:56,502 | Configuration values successfully loaded.
+2025-12-03 20:57:56,502 | Configuration values are: {'stack_name': 'wiseuni-cognito-stack', 'cached': True, 'parallel': True}
+2025-12-03 20:57:56,521 | Using SAM Template at /Users/EgePakten/Desktop/Projects/cognito-student-registry/backend/template.yaml
+2025-12-03 20:57:56,571 | Using config file: samconfig.toml, config environment: default
+2025-12-03 20:57:56,571 | Expand command line arguments to:
+2025-12-03 20:57:56,571 | --template_file=/Users/EgePakten/Desktop/Projects/cognito-student-registry/backend/template.yaml --parallel --mount_with=READ --build_dir=.aws-sam/build --cache_dir=.aws-sam/cache --cached 
+2025-12-03 20:57:56,614 | 'build' command is called
+2025-12-03 20:57:56,614 | Starting Build use cache
+2025-12-03 20:57:56,633 | Collected default values for parameters: {'ProjectName': 'wiseuni', 'Environment': 'dev'}
+2025-12-03 20:57:56,684 | There is no customer defined id or cdk path defined for resource LambdaTriggersStack, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,684 | There is no customer defined id or cdk path defined for resource CognitoStack, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,684 | There is no customer defined id or cdk path defined for resource DatabaseStack, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,684 | There is no customer defined id or cdk path defined for resource StorageStack, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,684 | There is no customer defined id or cdk path defined for resource IAMRolesStack, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,685 | Unable to resolve property PreSignUpFunctionArn: {'Fn::GetAtt': ['LambdaTriggersStack', 'Outputs.PreSignUpFunctionArn']}. Leaving as is.
+2025-12-03 20:57:56,685 | Unable to resolve property PostConfirmationFunctionArn: {'Fn::GetAtt': ['LambdaTriggersStack', 'Outputs.PostConfirmationFunctionArn']}. Leaving as is.
+2025-12-03 20:57:56,685 | Unable to resolve property PreAuthenticationFunctionArn: {'Fn::GetAtt': ['LambdaTriggersStack', 'Outputs.PreAuthenticationFunctionArn']}. Leaving as is.
+2025-12-03 20:57:56,685 | Unable to resolve property CustomMessageFunctionArn: {'Fn::GetAtt': ['LambdaTriggersStack', 'Outputs.CustomMessageFunctionArn']}. Leaving as is.
+2025-12-03 20:57:56,685 | Unable to resolve property IdentityPoolId: {'Fn::GetAtt': ['CognitoStack', 'Outputs.IdentityPoolId']}. Leaving as is.
+2025-12-03 20:57:56,685 | Unable to resolve property WiseUniTableArn: {'Fn::GetAtt': ['DatabaseStack', 'Outputs.WiseUniTableArn']}. Leaving as is.
+2025-12-03 20:57:56,685 | Unable to resolve property HomeworkBucketArn: {'Fn::GetAtt': ['StorageStack', 'Outputs.HomeworkBucketArn']}. Leaving as is.
+2025-12-03 20:57:56,685 | Unable to resolve property Value: {'Fn::GetAtt': ['CognitoStack', 'Outputs.UserPoolId']}. Leaving as is.
+2025-12-03 20:57:56,686 | Unable to resolve property Value: {'Fn::GetAtt': ['CognitoStack', 'Outputs.UserPoolClientId']}. Leaving as is.
+2025-12-03 20:57:56,686 | Unable to resolve property Value: {'Fn::GetAtt': ['CognitoStack', 'Outputs.IdentityPoolId']}. Leaving as is.
+2025-12-03 20:57:56,686 | Unable to resolve property Value: {'Fn::GetAtt': ['CognitoStack', 'Outputs.UserPoolDomain']}. Leaving as is.
+2025-12-03 20:57:56,686 | Unable to resolve property Value: {'Fn::GetAtt': ['DatabaseStack', 'Outputs.WiseUniTableName']}. Leaving as is.
+2025-12-03 20:57:56,686 | Unable to resolve property Value: {'Fn::GetAtt': ['DatabaseStack', 'Outputs.WiseUniTableArn']}. Leaving as is.
+2025-12-03 20:57:56,686 | Unable to resolve property Value: {'Fn::GetAtt': ['StorageStack', 'Outputs.HomeworkBucketName']}. Leaving as is.
+2025-12-03 20:57:56,686 | Unable to resolve property Value: {'Fn::GetAtt': ['StorageStack', 'Outputs.HomeworkBucketArn']}. Leaving as is.
+2025-12-03 20:57:56,687 | Unable to resolve property Value: {'Fn::GetAtt': ['IAMRolesStack', 'Outputs.StudentRoleArn']}. Leaving as is.
+2025-12-03 20:57:56,687 | Unable to resolve property Value: {'Fn::GetAtt': ['IAMRolesStack', 'Outputs.ProfessorRoleArn']}. Leaving as is.
+2025-12-03 20:57:56,687 | Unable to resolve property Value: {'Fn::GetAtt': ['IAMRolesStack', 'Outputs.AdminRoleArn']}. Leaving as is.
+2025-12-03 20:57:56,781 | 5 stacks found in the template
+2025-12-03 20:57:56,795 | Collected default values for parameters: {}
+2025-12-03 20:57:56,820 | There is no customer defined id or cdk path defined for resource PreSignUpFunction, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,820 | There is no customer defined id or cdk path defined for resource PostConfirmationFunction, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,820 | There is no customer defined id or cdk path defined for resource PreAuthenticationFunction, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,820 | There is no customer defined id or cdk path defined for resource CustomMessageFunction, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,821 | Unable to resolve property Value: {'Fn::GetAtt': ['PreSignUpFunction', 'Arn']}. Leaving as is.
+2025-12-03 20:57:56,821 | Unable to resolve property Value: {'Fn::GetAtt': ['PostConfirmationFunction', 'Arn']}. Leaving as is.
+2025-12-03 20:57:56,821 | Unable to resolve property Value: {'Fn::GetAtt': ['PreAuthenticationFunction', 'Arn']}. Leaving as is.
+2025-12-03 20:57:56,821 | Unable to resolve property Value: {'Fn::GetAtt': ['CustomMessageFunction', 'Arn']}. Leaving as is.
+2025-12-03 20:57:56,821 | 0 stacks found in the template
+2025-12-03 20:57:56,854 | Collected default values for parameters: {'PreSignUpFunctionArn': '', 'PostConfirmationFunctionArn': '', 'PreAuthenticationFunctionArn': '', 'CustomMessageFunctionArn': ''}
+2025-12-03 20:57:56,880 | There is no customer defined id or cdk path defined for resource UserPool, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,880 | There is no customer defined id or cdk path defined for resource UserPoolDomain, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,880 | There is no customer defined id or cdk path defined for resource UserPoolClient, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,880 | There is no customer defined id or cdk path defined for resource IdentityPool, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,881 | There is no customer defined id or cdk path defined for resource StudentsGroup, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,881 | There is no customer defined id or cdk path defined for resource ProfessorsGroup, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,881 | There is no customer defined id or cdk path defined for resource AdminsGroup, so we will use the resource logical id as the resource id
+2025-12-03 20:57:56,881 | Unable to resolve property Properties: None. Leaving as is.
+2025-12-03 20:57:56,881 | Unable to resolve property PreSignUp: {'Fn::If': ['HasPreSignUp', {'Ref': 'PreSignUpFunctionArn'}, {'Ref': 'AWS::NoValue'}]}. Leaving as is.
+2025-12-03 20:57:56,881 | Unable to resolve property PostConfirmation: {'Fn::If': ['HasPostConfirmation', {'Ref': 'PostConfirmationFunctionArn'}, {'Ref': 'AWS::NoValue'}]}. Leaving as is.
+2025-12-03 20:57:56,881 | Unable to resolve property PreAuthentication: {'Fn::If': ['HasPreAuthentication', {'Ref': 'PreAuthenticationFunctionArn'}, {'Ref': 'AWS::NoValue'}]}. Leaving as is.
+2025-12-03 20:57:56,881 | Unable to resolve property CustomMessage: {'Fn::If': ['HasCustomMessage', {'Ref': 'CustomMessageFunctionArn'}, {'Ref': 'AWS::NoValue'}]}. Leaving as is.
+2025-12-03 20:57:56,881 | Unable to resolve property Properties: None. Leaving as is.
+2025-12-03 20:57:56,882 | Unable to resolve property Value: {'Fn::GetAtt': ['UserPool', 'ProviderName']}. Leaving as is.
+2025-12-03 20:57:56,882 | Telemetry endpoint configured to be https://aws-serverless-tools-telemetry.us-west-2.amazonaws.com/metrics
+2025-12-03 20:57:57,013 | Telemetry endpoint configured to be https://aws-serverless-tools-telemetry.us-west-2.amazonaws.com/metrics
+2025-12-03 20:57:57,014 | Unable to find Click Context for getting session_id.
+2025-12-03 20:57:57,014 | Sending Telemetry: {'metrics': [{'commandRun': {'requestId': 'b407c61e-fa5a-4514-a4cf-c78d1c79b1ab', 'installationId': '737f4c0d-cd31-4341-ade1-4a06875f03c0', 'sessionId': '35b7d558-5213-42b9-ba83-c9106567b96e', 'executionEnvironment': 'CLI', 'ci': False, 'pyversion': '3.8.20', 'samcliVersion': '1.127.0', 'awsProfileProvided': False, 'debugFlagProvided': True, 'region': '', 'commandName': 'sam build', 'metricSpecificAttributes': {'projectType': 'CFN', 'gitOrigin': None, 'projectName': '10e08a419e850eba1ebba18fdd28eb7ec1b7e8baa9bcc3b973e2b8891ec726be', 'initialCommit': None}, 'duration': 311, 'exitReason': 'TypeError', 'exitCode': 255}}]}
+2025-12-03 20:57:57,015 | Sending Telemetry: {'metrics': [{'events': {'requestId': 'd62c0f96-2e39-4012-9580-67c42798c0f7', 'installationId': '737f4c0d-cd31-4341-ade1-4a06875f03c0', 'sessionId': '35b7d558-5213-42b9-ba83-c9106567b96e', 'executionEnvironment': 'CLI', 'ci': False, 'pyversion': '3.8.20', 'samcliVersion': '1.127.0', 'commandName': 'sam build', 'metricSpecificAttributes': {'events': [{'event_name': 'SamConfigFileExtension', 'event_value': '.toml', 'thread_id': '84b98028f9c74d6a997546cf946fed7b', 'time_stamp': '2025-12-03 20:57:56.501', 'exception_name': None}, {'event_name': 'SamConfigFileExtension', 'event_value': '.toml', 'thread_id': '9ef7bcbc7e6d4c678d7c14d6da81f217', 'time_stamp': '2025-12-03 20:57:56.571', 'exception_name': None}]}}}]}
+2025-12-03 20:57:57,463 | HTTPSConnectionPool(host='aws-serverless-tools-telemetry.us-west-2.amazonaws.com', port=443): Read timed out. (read timeout=0.1)
+2025-12-03 20:57:57,463 | HTTPSConnectionPool(host='aws-serverless-tools-telemetry.us-west-2.amazonaws.com', port=443): Read timed out. (read timeout=0.1)
+
+Error: 'NoneType' object does not support item assignment
+Traceback:
+  File "click/core.py", line 1078, in main
+  File "click/core.py", line 1688, in invoke
+  File "click/core.py", line 1434, in invoke
+  File "click/core.py", line 783, in invoke
+  File "samcli/cli/cli_config_file.py", line 347, in wrapper
+  File "click/decorators.py", line 92, in new_func
+  File "click/core.py", line 783, in invoke
+  File "samcli/lib/telemetry/metric.py", line 185, in wrapped
+  File "samcli/lib/telemetry/metric.py", line 150, in wrapped
+  File "samcli/lib/utils/version_checker.py", line 43, in wrapped
+  File "samcli/cli/main.py", line 95, in wrapper
+  File "samcli/commands/build/command.py", line 169, in cli
+  File "samcli/commands/build/command.py", line 234, in do_cli
+  File "samcli/commands/build/build_context.py", line 185, in __enter__
+  File "samcli/commands/build/build_context.py", line 191, in set_up
+  File "samcli/lib/providers/sam_stack_provider.py", line 281, in get_stacks
+  File "samcli/lib/providers/sam_stack_provider.py", line 270, in get_stacks
+  File "samcli/lib/providers/sam_stack_provider.py", line 74, in __init__
+  File "samcli/lib/providers/sam_stack_provider.py", line 118, in _extract_stacks
+
+An unexpected error was encountered while executing "sam build".
+Search for an existing issue:
+https://github.com/aws/aws-sam-cli/issues?q=is%3Aissue+is%3Aopen+Bug%3A%20sam%20build%20-%20TypeError
+Or create a bug report:
+https://github.com/aws/aws-sam-cli/issues/new?template=Bug_report.md&title=Bug%3A%20sam%20build%20-%20TypeError
