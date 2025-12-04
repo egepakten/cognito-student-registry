@@ -34,7 +34,7 @@ Resources:
   CognitoStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/d74205ba5928cf2f4842b0634dc06d75.template
+      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/4ad477e5a4bea47a00fee078a47d7665.template
       Parameters:
         ProjectName:
           Ref: ProjectName
@@ -66,7 +66,7 @@ Resources:
   DatabaseStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/4970ded6c648df56bed465a46f6fce01.template
+      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/ad65323111fe997fa86beafa789458cd.template
       Parameters:
         ProjectName:
           Ref: ProjectName
@@ -82,7 +82,7 @@ Resources:
   StorageStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/4e829a411a22ab1b6c5baed0dbf8f1ba.template
+      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/368d005e6509f24a7d3b480520967eb5.template
       Parameters:
         ProjectName:
           Ref: ProjectName
@@ -116,6 +116,22 @@ Resources:
           Fn::GetAtt:
           - StorageStack
           - Outputs.HomeworkBucketArn
+      Tags:
+      - Key: Project
+        Value:
+          Ref: ProjectName
+      - Key: Environment
+        Value:
+          Ref: Environment
+  FrontendStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/dcb1a50e9c9f14cdcc02273f55b7212a.template
+      Parameters:
+        ProjectName:
+          Ref: ProjectName
+        Environment:
+          Ref: Environment
       Tags:
       - Key: Project
         Value:
@@ -179,7 +195,7 @@ Outputs:
       Name:
         Fn::Sub: ${ProjectName}-TableArn-${Environment}
   HomeworkBucketName:
-    Description: S3 Bucket Name
+    Description: S3 Bucket Name (for file uploads)
     Value:
       Fn::GetAtt:
       - StorageStack
@@ -223,3 +239,39 @@ Outputs:
     Export:
       Name:
         Fn::Sub: ${ProjectName}-AdminRoleArn-${Environment}
+  FrontendBucketName:
+    Description: S3 bucket for frontend static files
+    Value:
+      Fn::GetAtt:
+      - FrontendStack
+      - Outputs.FrontendBucketName
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-FrontendBucketName-${Environment}
+  CloudFrontDistributionId:
+    Description: CloudFront distribution ID
+    Value:
+      Fn::GetAtt:
+      - FrontendStack
+      - Outputs.CloudFrontDistributionId
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-CloudFrontDistributionId-${Environment}
+  CloudFrontDomainName:
+    Description: CloudFront domain name
+    Value:
+      Fn::GetAtt:
+      - FrontendStack
+      - Outputs.CloudFrontDomainName
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-CloudFrontDomain-${Environment}
+  WebsiteURL:
+    Description: 🌐 Your WiseUni website URL (click to visit!)
+    Value:
+      Fn::GetAtt:
+      - FrontendStack
+      - Outputs.WebsiteURL
+    Export:
+      Name:
+        Fn::Sub: ${ProjectName}-WebsiteURL-${Environment}

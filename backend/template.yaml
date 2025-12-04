@@ -17,8 +17,7 @@ Parameters:
     Description: Environment name (dev, staging, prod)
 
 Resources:
-  # LAMBDA TRIGGERS STACK (must be created FIRST)
-  # Lambda functions must exist before Cognito User Pool can reference them
+  # LAMBDA TRIGGERS STACK
   LambdaTriggersStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -33,7 +32,6 @@ Resources:
           Value: !Ref Environment
 
   # COGNITO STACK
-  # User Pool and Identity Pool for authentication
   CognitoStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -52,7 +50,6 @@ Resources:
           Value: !Ref Environment
 
   # DATABASE STACK
-  # DynamoDB table for application data
   DatabaseStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -67,7 +64,6 @@ Resources:
           Value: !Ref Environment
 
   # STORAGE STACK
-  # S3 bucket for file uploads
   StorageStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -82,8 +78,6 @@ Resources:
           Value: !Ref Environment
 
   # IAM ROLES STACK
-  # IAM roles for fine-grained access control
-  # Dependencies are automatically enforced by !GetAtt references below
   IAMRolesStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -91,11 +85,25 @@ Resources:
       Parameters:
         ProjectName: !Ref ProjectName
         Environment: !Ref Environment
-        # These !GetAtt calls automatically create dependencies
-        # CloudFormation knows to wait for these stacks to finish
         IdentityPoolId: !GetAtt CognitoStack.Outputs.IdentityPoolId
         WiseUniTableArn: !GetAtt DatabaseStack.Outputs.WiseUniTableArn
         HomeworkBucketArn: !GetAtt StorageStack.Outputs.HomeworkBucketArn
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # FRONTEND STACK (✅ NEW!)
+  # S3 + CloudFront for static website hosting
+  # No dependencies - can deploy in parallel with other stacks
+  FrontendStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/frontend.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
       Tags:
         - Key: Project
           Value: !Ref ProjectName
@@ -143,7 +151,7 @@ Outputs:
 
   # STORAGE OUTPUTS
   HomeworkBucketName:
-    Description: S3 Bucket Name
+    Description: S3 Bucket Name (for file uploads)
     Value: !GetAtt StorageStack.Outputs.HomeworkBucketName
     Export:
       Name: !Sub ${ProjectName}-BucketName-${Environment}
@@ -172,3 +180,34 @@ Outputs:
     Value: !GetAtt IAMRolesStack.Outputs.AdminRoleArn
     Export:
       Name: !Sub ${ProjectName}-AdminRoleArn-${Environment}
+
+  # FRONTEND OUTPUTS 
+  FrontendBucketName:
+    Description: S3 bucket for frontend static files
+    Value: !GetAtt FrontendStack.Outputs.FrontendBucketName
+    Export:
+      Name: !Sub ${ProjectName}-FrontendBucketName-${Environment}
+
+  CloudFrontDistributionId:
+    Description: CloudFront distribution ID
+    Value: !GetAtt FrontendStack.Outputs.CloudFrontDistributionId
+    Export:
+      Name: !Sub ${ProjectName}-CloudFrontDistributionId-${Environment}
+
+  CloudFrontDistributionId:
+    Description: CloudFront distribution ID
+    Value: !GetAtt FrontendStack.Outputs.CloudFrontDistributionId
+    Export:
+      Name: !Sub ${ProjectName}-CloudFrontDistributionId-${Environment}
+
+  CloudFrontDomainName:
+    Description: CloudFront domain name
+    Value: !GetAtt FrontendStack.Outputs.CloudFrontDomainName
+    Export:
+      Name: !Sub ${ProjectName}-CloudFrontDomain-${Environment}
+
+  WebsiteURL:
+    Description: 🌐 Your WiseUni website URL (click to visit!)
+    Value: !GetAtt FrontendStack.Outputs.WebsiteURL
+    Export:
+      Name: !Sub ${ProjectName}-WebsiteURL-${Environment}

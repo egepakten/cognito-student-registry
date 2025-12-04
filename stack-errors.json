@@ -1,0 +1,50 @@
+[
+    {
+        "StackId": "arn:aws:cloudformation:us-east-1:116981775669:stack/wiseuni-cognito-stack/51ccbc20-d092-11f0-8809-0ebec566510b",
+        "EventId": "FrontendStack-CREATE_FAILED-2025-12-03T21:52:19.528Z",
+        "StackName": "wiseuni-cognito-stack",
+        "LogicalResourceId": "FrontendStack",
+        "PhysicalResourceId": "arn:aws:cloudformation:us-east-1:116981775669:stack/wiseuni-cognito-stack-FrontendStack-H4LAKRMAGTUX/56efe3d0-d092-11f0-a21e-0affc446c29b",
+        "ResourceType": "AWS::CloudFormation::Stack",
+        "Timestamp": "2025-12-03T21:52:19.528000+00:00",
+        "ResourceStatus": "CREATE_FAILED",
+        "ResourceStatusReason": "Resource creation cancelled",
+        "ResourceProperties": "{\"TemplateURL\":\"https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/b2171fb49d8074e8bbde63684f7d092c.template\",\"Parameters\":{\"ProjectName\":\"wiseuni\",\"Environment\":\"dev\"},\"Tags\":[{\"Value\":\"wiseuni\",\"Key\":\"Project\"},{\"Value\":\"dev\",\"Key\":\"Environment\"}]}"
+    },
+    {
+        "StackId": "arn:aws:cloudformation:us-east-1:116981775669:stack/wiseuni-cognito-stack/51ccbc20-d092-11f0-8809-0ebec566510b",
+        "EventId": "LambdaTriggersStack-CREATE_FAILED-2025-12-03T21:52:19.494Z",
+        "StackName": "wiseuni-cognito-stack",
+        "LogicalResourceId": "LambdaTriggersStack",
+        "PhysicalResourceId": "arn:aws:cloudformation:us-east-1:116981775669:stack/wiseuni-cognito-stack-LambdaTriggersStack-6AE8NZ03HVNF/56ef95b0-d092-11f0-a0a0-0afffba0be9b",
+        "ResourceType": "AWS::CloudFormation::Stack",
+        "Timestamp": "2025-12-03T21:52:19.494000+00:00",
+        "ResourceStatus": "CREATE_FAILED",
+        "ResourceStatusReason": "Resource creation cancelled",
+        "ResourceProperties": "{\"TemplateURL\":\"https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/00294b77bd734beb34b0ed39bba5a34f.template\",\"Parameters\":{\"ProjectName\":\"wiseuni\",\"Environment\":\"dev\"},\"Tags\":[{\"Value\":\"wiseuni\",\"Key\":\"Project\"},{\"Value\":\"dev\",\"Key\":\"Environment\"}]}"
+    },
+    {
+        "StackId": "arn:aws:cloudformation:us-east-1:116981775669:stack/wiseuni-cognito-stack/51ccbc20-d092-11f0-8809-0ebec566510b",
+        "EventId": "StorageStack-CREATE_FAILED-2025-12-03T21:52:19.188Z",
+        "StackName": "wiseuni-cognito-stack",
+        "LogicalResourceId": "StorageStack",
+        "PhysicalResourceId": "",
+        "ResourceType": "AWS::CloudFormation::Stack",
+        "Timestamp": "2025-12-03T21:52:19.188000+00:00",
+        "ResourceStatus": "CREATE_FAILED",
+        "ResourceStatusReason": "Invalid template resource property 'PublicAccessBlockConfiguration'",
+        "ResourceProperties": "{\"TemplateURL\":\"https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/4a55e4f5aa2801783e8b58154b195458.template\",\"Parameters\":{\"ProjectName\":\"wiseuni\",\"Environment\":\"dev\"},\"Tags\":[{\"Value\":\"wiseuni\",\"Key\":\"Project\"},{\"Value\":\"dev\",\"Key\":\"Environment\"}]}"
+    },
+    {
+        "StackId": "arn:aws:cloudformation:us-east-1:116981775669:stack/wiseuni-cognito-stack/51ccbc20-d092-11f0-8809-0ebec566510b",
+        "EventId": "DatabaseStack-CREATE_FAILED-2025-12-03T21:52:19.144Z",
+        "StackName": "wiseuni-cognito-stack",
+        "LogicalResourceId": "DatabaseStack",
+        "PhysicalResourceId": "",
+        "ResourceType": "AWS::CloudFormation::Stack",
+        "Timestamp": "2025-12-03T21:52:19.144000+00:00",
+        "ResourceStatus": "CREATE_FAILED",
+        "ResourceStatusReason": "[/Resources/WiseUniTable/Properties] 'null' values are not allowed in templates",
+        "ResourceProperties": "{\"TemplateURL\":\"https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/ff4596acf33ce0677d8c760e5ae046f3.template\",\"Parameters\":{\"ProjectName\":\"wiseuni\",\"Environment\":\"dev\"},\"Tags\":[{\"Value\":\"wiseuni\",\"Key\":\"Project\"},{\"Value\":\"dev\",\"Key\":\"Environment\"}]}"
+    }
+]

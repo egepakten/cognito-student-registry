@@ -28,10 +28,10 @@ Parameters:
 Conditions:
   # !Equals ["arn:aws:lambda:...", ""] → false (they're not equal)
   # !Not [false] → true (Lambda trigger WILL be added)
-  HasPreSignUp: !Not [[!Equals [!Ref PreSignUpFunctionArn, ""]]]
-  HasPostConfirmation: !Not [[!Equals [!Ref PostConfirmationFunctionArn, ""]]]
-  HasPreAuthentication: !Not [[!Equals [!Ref PreAuthenticationFunctionArn, ""]]]
-  HasCustomMessage: !Not [[!Equals [!Ref CustomMessageFunctionArn, ""]]]
+  HasPreSignUp: !Not [!Equals [!Ref PreSignUpFunctionArn, ""]]
+  HasPostConfirmation: !Not [!Equals [!Ref PostConfirmationFunctionArn, ""]]
+  HasPreAuthentication: !Not [!Equals [!Ref PreAuthenticationFunctionArn, ""]]
+  HasCustomMessage: !Not [!Equals [!Ref CustomMessageFunctionArn, ""]]
 
 Resources:
   # User Pool - Database that stores:
@@ -39,36 +39,36 @@ Resources:
   # Authentication rules (password policy, MFA) - who can access ?
   # Verification status (is email confirmed?)
   UserPool:
-    Type: AWS ::Cognito::UserPool # Resource Type
+    Type: AWS::Cognito::UserPool # Resource Type
     Properties:
-    # Name shown in AWS Console, !Sub replaces with actual values
-    UserPoolName: !Sub ${ProjectName}-user-pool-${Environment}
+      # Name shown in AWS Console, !Sub replaces with actual values
+      UserPoolName: !Sub ${ProjectName}-user-pool-${Environment}
 
-    # Username Configuration
-    UsernameAttributes:
-      - email # user log in with their email address (not with a seperate username)
-      # Options are phone, email, username or either username and email
-    UsernameConfiguration:
-      CaseSensitive: false # "John@wiseuni.com" and "john@wiseuni.com" are the same
+      # Username Configuration
+      UsernameAttributes:
+        - email # user log in with their email address (not with a seperate username)
+        # Options are phone, email, username or either username and email
+      UsernameConfiguration:
+        CaseSensitive: false # "John@wiseuni.com" and "john@wiseuni.com" are the same
 
-    # Email Verification
-    AutoVerifiedAttributes:
-      # When user signs up, Cognito Automatically sends a verification code to users email
-      # User most confirm their account
-      - email
+      # Email Verification
+      AutoVerifiedAttributes:
+        # When user signs up, Cognito Automatically sends a verification code to users email
+        # User most confirm their account
+        - email
 
-    # Password Policy
-    # Rules for makes a valid password
-    # This is Enforced by Cognito - weak passwords rejected
-    Policies:
-      PasswordPolicy:
-        MinimumLength: 8 # Must be at least 8 characters
-        RequiredUppercase: true # Must at least one capital letter
-        RequireLowercase: true # Must at least one lowercase
-        RequireNumbers: true # Must contains at least one number
-        RequireSymbols: true # Does require special characters
-        TemporaryPasswordValidityDays: 7 # When admin creates a user, they get a temporary password
-        # User must change it within 7 days or it expires
+      # Password Policy
+      # Rules for makes a valid password
+      # This is Enforced by Cognito - weak passwords rejected
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8 # Must be at least 8 characters
+          RequireUppercase: true # Must at least one capital letter
+          RequireLowercase: true # Must at least one lowercase
+          RequireNumbers: true # Must contains at least one number
+          RequireSymbols: true # Does require special characters
+          TemporaryPasswordValidityDays: 7 # When admin creates a user, they get a temporary password
+          # User must change it within 7 days or it expires
 
       # MFA (Multi-Factor Authentication)
       MfaConfiguration: OPTIONAL # Users can choose to enable MFA (Recommanded Approach)
@@ -175,119 +175,119 @@ Resources:
   UserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-    # Create URL like: wiseuni-dev-123456789.auth.eu-west-2.amazoncognito.com
-    Domain: !Sub ${ProjectName}-${Environment}-${AWS::AccountId} # AccountID ensures globally uniqueness
-    UserPoolId: !Ref UserPool # !Ref UserPool -> gets the ID of the userPool resource above
-
-    # User Pool Client
-    # A client represents the application connecting to the User Pool
-    # User Pool = Database of Users
-    # Client = App that allowed to access that database
-    # Multiple Clients Could be exists
-    # Web app client (React Web App, Student Sees Courses Different Screen)
-    # Mobile App Client (React Native, Student Sees same thing but on their phones)
-    # Admin Dashboard Client (React Admin Panel, Admin sees all users, analytics)
-    # Each can have different permissions, but share the same user pool database, because users are same
+      # Create URL like: wiseuni-dev-123456789.auth.eu-west-2.amazoncognito.com
+      Domain: !Sub ${ProjectName}-${Environment}-${AWS::AccountId} # AccountID ensures globally uniqueness
+      UserPoolId: !Ref UserPool
+      # !Ref UserPool -> gets the ID of the userPool resource above
+      # User Pool Client
+      # A client represents the application connecting to the User Pool
+      # User Pool = Database of Users
+      # Client = App that allowed to access that database
+      # Multiple Clients Could be exists
+      # Web app client (React Web App, Student Sees Courses Different Screen)
+      # Mobile App Client (React Native, Student Sees same thing but on their phones)
+      # Admin Dashboard Client (React Admin Panel, Admin sees all users, analytics)
+      # Each can have different permissions, but share the same user pool database, because users are same
 
   UserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
       ClientName: !Sub ${ProjectName}-web-client-${Environment} # wiseuni-web-client-dev
 
-    UserPoolId: !Ref UserPool # Link to user pool
+      UserPoolId: !Ref UserPool # Link to user pool
 
-    GenerateSecret: false
-    # Client Secret = Proves "This request comes from the real WiseUni app"
-    # // src/config.ts
-    # const config = {
-    #   clientId: "abc123",
-    #   clientSecret: "super-secret-key-here"  // 😱 PROBLEM!
-    # };
-    # Client Secret is super secret and in Browser Apps it might be seen from the source -> config.ts -> "super-secret-key-here"
-    # So someone else could pretend to be this app
-    # Why Browser Apps Can't Hide Secrets
+      GenerateSecret: false
+      # Client Secret = Proves "This request comes from the real WiseUni app"
+      # // src/config.ts
+      # const config = {
+      #   clientId: "abc123",
+      #   clientSecret: "super-secret-key-here"  // 😱 PROBLEM!
+      # };
+      # Client Secret is super secret and in Browser Apps it might be seen from the source -> config.ts -> "super-secret-key-here"
+      # So someone else could pretend to be this app
+      # Why Browser Apps Can't Hide Secrets
 
-    # OAuth configuration = Industry Standard protocol for authentication
-    # Configures how the hosted UI authentications works
+      # OAuth configuration = Industry Standard protocol for authentication
+      # Configures how the hosted UI authentications works
 
-    AllowedOAuthFlows:
-      - code
-    # The Autherization Code flow:
-    #   1. User visits your app
-    #   2. App redirects to Cognito Hosted UI
-    #   3. User logs in on Cognito
-    #   4. Cognito redirects back with a CODE
-    #   5. App exchange code for tokens
+      AllowedOAuthFlows:
+        - code
+      # The Autherization Code flow:
+      #   1. User visits your app
+      #   2. App redirects to Cognito Hosted UI
+      #   3. User logs in on Cognito
+      #   4. Cognito redirects back with a CODE
+      #   5. App exchange code for tokens
 
-    AllowedOAuthScopes:
-      - email # Get user's email in token
-      - openid # Required for OIDC (OpenID Connect)
-      - profile # Get user's name and other profile info
-    # Scope = What Information the app can access
-    # These are included in the JWT token claims
+      AllowedOAuthScopes:
+        - email # Get user's email in token
+        - openid # Required for OIDC (OpenID Connect)
+        - profile # Get user's name and other profile info
+      # Scope = What Information the app can access
+      # These are included in the JWT token claims
 
-    AllowedOAuthFlowsUserPoolClient: true #(Enable OAuth)
+      AllowedOAuthFlowsUserPoolClient: true #(Enable OAuth)
 
-    # Callback URL
-    # Where cognito redirects after successful login
-    CallbackURLs:
-      - http://localhost:5173/callback # vite dev server
-      - http://localhost:3000/callback # Create React App dev server
-    # - https://app.wiseuni.com/callback = Production Version
-    # Security Only URL on the list allowed, prevent attacker from redirecting tokens to their own site
+      # Callback URL
+      # Where cognito redirects after successful login
+      CallbackURLs:
+        - http://localhost:5173/callback # vite dev server
+        - http://localhost:3000/callback # Create React App dev server
+      # - https://app.wiseuni.com/callback = Production Version
+      # Security Only URL on the list allowed, prevent attacker from redirecting tokens to their own site
 
-    LogoutURLs:
-      - http://localhost:5173/
-      - http://localhost:3000/
-      # Where to redirect after logout
+      LogoutURLs:
+        - http://localhost:5173/
+        - http://localhost:3000/
+        # Where to redirect after logout
 
-    # Identity Providers
-    SupportedIdentityProviders:
-      - COGNITO # Google (Sign-in), Facebook (Sign-in), Apple (Sign-in)
+      # Identity Providers
+      SupportedIdentityProviders:
+        - COGNITO # Google (Sign-in), Facebook (Sign-in), Apple (Sign-in)
 
-    # Token Validity = How long each token valid before expiring
-    AccessTokenValidity: 1 # Used to call APIs
-    IdTokenValidity: 1 # Contains user info (email, name)
-    RefreshTokenValidity: 30 # Used to get NEW access/id tokens, After 30 day relogin
+      # Token Validity = How long each token valid before expiring
+      AccessTokenValidity: 1 # Used to call APIs
+      IdTokenValidity: 1 # Contains user info (email, name)
+      RefreshTokenValidity: 30 # Used to get NEW access/id tokens, After 30 day relogin
 
-    TokenValidityUnits:
-      AccessToken: hours # 1 hour
-      IdToken: hours
-      RefreshToken: days
+      TokenValidityUnits:
+        AccessToken: hours # 1 hour
+        IdToken: hours
+        RefreshToken: days
 
-    # Auth Flows = Which authentication methods are allowed
-    ExplicitAuthFlows:
-      - ALLOW_USER_SRP_AUTH
-        # SRP (Secure Remote Password)
-      # Password is NEVER sent to server in plaintext
-      # Uses cryptographic challenge response
-      # This is what the Cognito SDK uses by default
-      - ALLOW_REFRESH_TOKEN_AUTH
-      # Allow using refresh token to get new access tokens
-      # Required for keeping users logged in
-      - ALLOW_USER_PASSWORD_AUTH
-      # Allow direct username/password authentication
-      # Less secure than the SRP (Password Sent to the Server)
-      - ALLOW_CUSTOM_AUTH
-      # Allow custom authentication flows
-      # Needed for some MFA scenerious
+      # Auth Flows = Which authentication methods are allowed
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+          # SRP (Secure Remote Password)
+        # Password is NEVER sent to server in plaintext
+        # Uses cryptographic challenge response
+        # This is what the Cognito SDK uses by default
+        - ALLOW_REFRESH_TOKEN_AUTH
+        # Allow using refresh token to get new access tokens
+        # Required for keeping users logged in
+        - ALLOW_USER_PASSWORD_AUTH
+        # Allow direct username/password authentication
+        # Less secure than the SRP (Password Sent to the Server)
+        - ALLOW_CUSTOM_AUTH
+        # Allow custom authentication flows
+        # Needed for some MFA scenerious
 
-    # Security Settings
-    PreventUserExistenceErrors: ENABLED
-    # What happens when someone tries to login with non-existent email?
-    # DISABLED = User Does not exist error BUT ! Attackers knows this email is not registered
-    # Can enumerate which emails are registered
-    # ENABLED: Generic "Incorrect username or password" error
+      # Security Settings
+      PreventUserExistenceErrors: ENABLED
+      # What happens when someone tries to login with non-existent email?
+      # DISABLED = User Does not exist error BUT ! Attackers knows this email is not registered
+      # Can enumerate which emails are registered
+      # ENABLED: Generic "Incorrect username or password" error
 
-    # Identity Pool = Different From User Pool
-    # User pool = Who are you? (authentication)
-    # - Stores User accounts
-    # - Handles login/signup
-    # - Issues JWT tokens (idToken,accessToken)
-    # Identity Pool = "What can you do?" (authorization)
-    # - Exchanges JWT Tokens for credentials
-    # - Those Credentials let you call AWS Services S3, DynamoDB
-    # - Can map users to different IAM Roles
+  # Identity Pool = Different From User Pool
+  # User pool = Who are you? (authentication)
+  # - Stores User accounts
+  # - Handles login/signup
+  # - Issues JWT tokens (idToken,accessToken)
+  # Identity Pool = "What can you do?" (authorization)
+  # - Exchanges JWT Tokens for credentials
+  # - Those Credentials let you call AWS Services S3, DynamoDB
+  # - Can map users to different IAM Roles
 
   IdentityPool:
     Type: AWS::Cognito::IdentityPool
@@ -300,7 +300,7 @@ Resources:
       # Only Authenticated student/professors should access AWS
       CognitoIdentityProviders:
         - ClientId: !Ref UserPoolClient # Client ID
-          ProviderName: !GettAtt UserPool.ProviderName
+          ProviderName: !GetAtt UserPool.ProviderName
       # Links Identity Pool to our User Pool
       # Trust users who authenticated with this user pool
 

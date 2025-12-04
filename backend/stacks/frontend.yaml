@@ -1,0 +1,240 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: WiseUni - Frontend Stack (S3 + CloudFront)
+
+# PARAMETERS
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Project name for resource naming
+  Environment:
+    Type: String
+    Description: Environment (dev, staging, prod)
+
+# RESOURCES
+Resources:
+  # S3 BUCKET FOR STATIC WEBSITE
+
+  # Stores all frontend files: index.html, JS, CSS, images
+  # NOT configured for public website hosting (CloudFront will access it)
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectName}-frontend-${Environment}-${AWS::AccountId}
+      # Bucket name must be globally unique
+      # Format: wiseuni-frontend-dev-116981775669
+
+      # Block ALL public access (CloudFront will access via OAC)
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+      # Enable versioning for file history (optional but recommended)
+      VersioningConfiguration:
+        Status: Enabled
+
+      # Lifecycle rule to delete old versions after 30 days
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+
+      # Tags for cost tracking
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Purpose
+          Value: StaticWebsiteHosting
+
+  # CLOUDFRONT ORIGIN ACCESS CONTROL (OAC)
+
+  # Allows CloudFront to access private S3 bucket
+  # OAC is newer and better than Origin Access Identity (OAI)
+  CloudFrontOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub ${ProjectName}-oac-${Environment}
+        Description: !Sub Access control for ${ProjectName} frontend bucket
+        OriginAccessControlOriginType: s3
+        # Must be "s3" for S3 origins
+
+        SigningBehavior: always
+        # CloudFront will ALWAYS sign requests to S3
+        # Without this, S3 would reject requests
+
+        SigningProtocol: sigv4
+        # Use AWS Signature Version 4 for signing
+
+  # CLOUDFRONT DISTRIBUTION
+
+  # CDN that delivers your frontend globally
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        # Distribution is enabled (not disabled)
+        Enabled: true
+
+        # Use HTTP/2 for better performance
+        HttpVersion: http2
+
+        # Default root object
+        DefaultRootObject: index.html
+        # When user visits https://xxx.cloudfront.net/ → serves index.html
+
+        # Comment for identification
+        Comment: !Sub ${ProjectName} Frontend Distribution - ${Environment}
+
+        # Price class (where CloudFront will cache your content)
+        PriceClass: PriceClass_100
+        # PriceClass_100: North America & Europe (cheapest)
+        # PriceClass_200: + Asia, Middle East, Africa
+        # PriceClass_All: All edge locations (most expensive)
+
+        # ────────────────────────────────────────────────────────────────────
+        # ORIGINS - Where CloudFront gets content from
+        # ────────────────────────────────────────────────────────────────────
+        Origins:
+          - Id: S3Origin
+            # Unique ID for this origin
+
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            # S3 bucket domain (NOT the website endpoint!)
+            # Format: bucket-name.s3.region.amazonaws.com
+
+            OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
+            # Attach OAC so CloudFront can access private bucket
+
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+              # Leave empty when using OAC (not OAI)
+
+        # ────────────────────────────────────────────────────────────────────
+        # DEFAULT CACHE BEHAVIOR - How CloudFront handles requests
+        # ────────────────────────────────────────────────────────────────────
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          # Which origin to use (matches Origins[].Id above)
+
+          ViewerProtocolPolicy: redirect-to-https
+          # HTTP requests automatically redirect to HTTPS
+          # Options: allow-all, https-only, redirect-to-https
+
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          # Only allow read operations (no POST/PUT/DELETE)
+
+          CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          # Which methods to cache
+
+          Compress: true
+          # Enable automatic gzip/brotli compression
+          # Reduces file sizes by ~70% for text files
+
+          # Cache Policy
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          # Managed-CachingOptimized policy
+          # Caches for 24 hours, respects Cache-Control headers
+          # See all policies: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html
+
+        # ────────────────────────────────────────────────────────────────────
+        # CUSTOM ERROR RESPONSES - For Single Page Applications (SPA)
+        # ────────────────────────────────────────────────────────────────────
+        # React Router uses client-side routing
+        # When user visits /dashboard, S3 returns 404 (file doesn't exist)
+        # We redirect all 404s to index.html, which handles routing
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 300
+            # Cache 404→200 redirects for 5 minutes
+
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 300
+            # Handle 403 errors the same way
+
+        # ────────────────────────────────────────────────────────────────────
+        # VIEWER CERTIFICATE - HTTPS Configuration
+        # ────────────────────────────────────────────────────────────────────
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+          # Use CloudFront's default SSL certificate
+          # Your URL: https://d111111abcdef8.cloudfront.net
+
+          # If you had a custom domain, you'd use:
+          # AcmCertificateArn: !Ref MyCertificate
+          # MinimumProtocolVersion: TLSv1.2_2021
+          # SslSupportMethod: sni-only
+
+      # Tags
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Purpose
+          Value: Frontend
+
+  # S3 BUCKET POLICY
+
+  # Grants CloudFront permission to read from the private S3 bucket
+  # WITHOUT THIS: CloudFront can't access the bucket → Distribution fails
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipal
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${FrontendBucket.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}
+            # Only THIS CloudFront distribution can access the bucket
+            # Not any other CloudFront distribution
+
+# OUTPUTS
+# Values that other stacks and deployment scripts need
+Outputs:
+  FrontendBucketName:
+    Description: S3 bucket name for frontend files
+    Value: !Ref FrontendBucket
+    # No Export section
+
+  FrontendBucketArn:
+    Description: S3 bucket ARN
+    Value: !GetAtt FrontendBucket.Arn
+    # No Export section
+
+  CloudFrontDistributionId:
+    Description: CloudFront distribution ID
+    Value: !Ref CloudFrontDistribution
+    # No Export section
+
+  CloudFrontDomainName:
+    Description: CloudFront distribution domain name
+    Value: !GetAtt CloudFrontDistribution.DomainName
+    # No Export section
+
+  WebsiteURL:
+    Description: Full website URL
+    Value: !Sub https://${CloudFrontDistribution.DomainName}
+    # No Export section

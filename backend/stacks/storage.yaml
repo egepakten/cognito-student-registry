@@ -18,98 +18,98 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub ${ProjectName}-uploads-${Environment}-${AWS::AccountId} #  "wiseuni-uploads-dev-123456789012"
-    # Why did we add account ID ?
-    # S3 bucket names must be globally unique across all aws accounts
-    # wiseuni-uploads-dev might be already taken from someone else
+      # Why did we add account ID ?
+      # S3 bucket names must be globally unique across all aws accounts
+      # wiseuni-uploads-dev might be already taken from someone else
 
-  # Public Access Block
-  # By default S3 buckets can be made public (redable to anyone)
-  # This caused many data breaches (companies leaking customer data)
-  # PublicAccessBlockConfiguration Prevents accidental public exposure
-  # ACL (Access Control List) = Permissions on INDIVIDUAL files
-  # Bucket Policy = Permissions on the ENTIRE bucket
-  PublicAccessBlockConfiguration:
-    BlockPublicAcls: true
-    # Block any ACL (Access Control List that) that would make objects public
-    # Even if someone tries to upload with public permissions -> BLOCKED
-    BlockPublicPolicy: true
-    # Block any bucket policy that would make the bucket public
-    # Even if an admin tries to add a public policy -> Blocked
-    IgnorePublicAcls: true
-    # If there are any existing public ACLs, IGNORE them
-    # Objects won't be public even if ACL says they should be
-    RestrictPublicBuckets: true
-    # Restrict access to bucket if it has a public policy
-    # Only AWS accounts with explicit access can use it
+      # Public Access Block
+      # By default S3 buckets can be made public (redable to anyone)
+      # This caused many data breaches (companies leaking customer data)
+      # PublicAccessBlockConfiguration Prevents accidental public exposure
+      # ACL (Access Control List) = Permissions on INDIVIDUAL files
+      # Bucket Policy = Permissions on the ENTIRE bucket
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        # Block any ACL (Access Control List that) that would make objects public
+        # Even if someone tries to upload with public permissions -> BLOCKED
+        BlockPublicPolicy: true
+        # Block any bucket policy that would make the bucket public
+        # Even if an admin tries to add a public policy -> Blocked
+        IgnorePublicAcls: true
+        # If there are any existing public ACLs, IGNORE them
+        # Objects won't be public even if ACL says they should be
+        RestrictPublicBuckets: true
+        # Restrict access to bucket if it has a public policy
+        # Only AWS accounts with explicit access can use it
 
-  # Versioning
-  # Keep all versions of every file, even after updates/deletes
-  # Without versioning: Delete = Gone Forever!
-  # With versioning: Delete = Hidden, but recoverable
-  VersioningConfiguration:
-    Status: Enabled
-    # Options:
-    # Enabled = Keep all versions
-    # Suspended = Stop creating new versions (keeps existing ones)
-    # (default) = No versioning
+      # Versioning
+      # Keep all versions of every file, even after updates/deletes
+      # Without versioning: Delete = Gone Forever!
+      # With versioning: Delete = Hidden, but recoverable
+      VersioningConfiguration:
+        Status: Enabled
+        # Options:
+        # Enabled = Keep all versions
+        # Suspended = Stop creating new versions (keeps existing ones)
+        # (default) = No versioning
 
-  # CORS (Cross-Origin Resource Sharing)
-  # Required for browser-based uploads
-  # Without CORS: Browser blocks request to S3 (security feature)
-  # With CORS: Browser allows request from specified origins
-  CorsConfiguration:
-    CorsRules:
-      - AllowedHeaders:
-          - "*"
-        # Which HTTP headers the browser can send
-        # "*" = Any header (Content-Type, Authorization, etc.)
-        AllowedMethods:
-          - GET # Download files
-          - PUT # Upload files
-          - POST # Upload via form
-          - DELETE # Delete files
-        # Which HTTP methods are allowed
-        AllowedOrigins:
-          - http://localhost:5173 # Vite dev server
-          - http://localhost:3000 # Create React App dev server
-        # Which websites can request to this bucket
-        # In production, add your real domain:
-        # - https://app.wiseuni.com
-        MaxAge: 3600 # 1 hour
-        # How long (seconds) browser caches CORS preflight response
+      # CORS (Cross-Origin Resource Sharing)
+      # Required for browser-based uploads
+      # Without CORS: Browser blocks request to S3 (security feature)
+      # With CORS: Browser allows request from specified origins
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            # Which HTTP headers the browser can send
+            # "*" = Any header (Content-Type, Authorization, etc.)
+            AllowedMethods:
+              - GET # Download files
+              - PUT # Upload files
+              - POST # Upload via form
+              - DELETE # Delete files
+            # Which HTTP methods are allowed
+            AllowedOrigins:
+              - http://localhost:5173 # Vite dev server
+              - http://localhost:3000 # Create React App dev server
+            # Which websites can request to this bucket
+            # In production, add your real domain:
+            # - https://app.wiseuni.com
+            MaxAge: 3600 # 1 hour
+            # How long (seconds) browser caches CORS preflight response
 
-  # Lifecycle rules (Optional delete old versions after 90 days)
-  # With versioning enabled, old versions pile up!
-  # Example: 100 uploads/day × 365 days × 3 versions each = 109,500 objects!
-  # Lifecycle rules automatically clean up old versions
-  LifecycleConfiguration:
-    Rules:
-      - Id: DeleteOldVersions # unique identifier for this rule
-        Status: Enabled # Rule is active (Disabled = rule exists but doesn't run)
-    NoncurrentVersionExpiration:
-      NoncurrentDays: 90
-      # Delete non-current versions after 90 days
-      #
-      # "Non-current" = Not the latest version
-      # After 90 days, old versions are automatically deleted
-      #
-      # WHY 90 days?
-      # • Long enough to recover from mistakes
-      # • Short enough to not waste storage costs
-      # • Adjust based on your needs (30, 60, 180 days)
+      # Lifecycle rules (Optional delete old versions after 90 days)
+      # With versioning enabled, old versions pile up!
+      # Example: 100 uploads/day × 365 days × 3 versions each = 109,500 objects!
+      # Lifecycle rules automatically clean up old versions
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions # unique identifier for this rule
+            Status: Enabled # Rule is active (Disabled = rule exists but doesn't run)
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 90
+              # Delete non-current versions after 90 days
+              #
+              # "Non-current" = Not the latest version
+              # After 90 days, old versions are automatically deleted
+              #
+              # WHY 90 days?
+              # • Long enough to recover from mistakes
+              # • Short enough to not waste storage costs
+              # • Adjust based on your needs (30, 60, 180 days)
 
-    # Tags
-    # Metadata labels for organization and cost tracking
-    Tags:
-      - Key: Project
-        Value: !Ref ProjectName # "wiseuni"
-      - Key: Environment
-        Value: !Ref Environment # "dev"
-    # Use in AWS Cost Explorer:
-    # "How much S3 storage is WiseUni dev using?"
-    #
-    # Filter: Project=wiseuni, Environment=dev
-    # Shows: $X.XX this month
+      # Tags
+      # Metadata labels for organization and cost tracking
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName # "wiseuni"
+        - Key: Environment
+          Value: !Ref Environment # "dev"
+        # Use in AWS Cost Explorer:
+        # "How much S3 storage is WiseUni dev using?"
+        #
+        # Filter: Project=wiseuni, Environment=dev
+        # Shows: $X.XX this month
 
 # Values that other stacks and your frontend need
 Outputs:

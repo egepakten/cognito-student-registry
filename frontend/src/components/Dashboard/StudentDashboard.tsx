@@ -14,7 +14,7 @@ import {
 import Card from "../../utils/Card";
 
 export default function StudentDashboard() {
-  const { user, tokens } = useAuth();
+  const { tokens } = useAuth();
 
   // CHANGE: Added state for real data from DynamoDB
   const [loading, setLoading] = useState(true);

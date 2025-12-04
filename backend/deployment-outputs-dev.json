@@ -1,0 +1,92 @@
+[
+  {
+    "OutputKey": "WiseUniTableName",
+    "OutputValue": "wiseuni-data-dev",
+    "Description": "DynamoDB Table Name",
+    "ExportName": "wiseuni-TableName-dev"
+  },
+  {
+    "OutputKey": "UserPoolDomain",
+    "OutputValue": "wiseuni-dev-116981775669",
+    "Description": "Cognito User Pool Domain",
+    "ExportName": "wiseuni-UserPoolDomain-dev"
+  },
+  {
+    "OutputKey": "CloudFrontDistributionId",
+    "OutputValue": "E3PO8HQO2XRH07",
+    "Description": "CloudFront distribution ID",
+    "ExportName": "wiseuni-CloudFrontDistributionId-dev"
+  },
+  {
+    "OutputKey": "WebsiteURL",
+    "OutputValue": "https://d2jo7r8jja29jh.cloudfront.net",
+    "Description": "? Your WiseUni website URL (click to visit!)",
+    "ExportName": "wiseuni-WebsiteURL-dev"
+  },
+  {
+    "OutputKey": "AdminRoleArn",
+    "OutputValue": "arn:aws:iam::116981775669:role/wiseuni-admin-role-dev",
+    "Description": "Admin IAM Role ARN",
+    "ExportName": "wiseuni-AdminRoleArn-dev"
+  },
+  {
+    "OutputKey": "StudentRoleArn",
+    "OutputValue": "arn:aws:iam::116981775669:role/wiseuni-student-role-dev",
+    "Description": "Student IAM Role ARN",
+    "ExportName": "wiseuni-StudentRoleArn-dev"
+  },
+  {
+    "OutputKey": "ProfessorRoleArn",
+    "OutputValue": "arn:aws:iam::116981775669:role/wiseuni-professor-role-dev",
+    "Description": "Professor IAM Role ARN",
+    "ExportName": "wiseuni-ProfessorRoleArn-dev"
+  },
+  {
+    "OutputKey": "CloudFrontDomainName",
+    "OutputValue": "d2jo7r8jja29jh.cloudfront.net",
+    "Description": "CloudFront domain name",
+    "ExportName": "wiseuni-CloudFrontDomain-dev"
+  },
+  {
+    "OutputKey": "UserPoolClientId",
+    "OutputValue": "7q8v66v0ps30tvv89haf3javeb",
+    "Description": "Cognito User Pool Client ID",
+    "ExportName": "wiseuni-UserPoolClientId-dev"
+  },
+  {
+    "OutputKey": "UserPoolId",
+    "OutputValue": "us-east-1_gVIyyM26a",
+    "Description": "Cognito User Pool ID",
+    "ExportName": "wiseuni-UserPoolId-dev"
+  },
+  {
+    "OutputKey": "FrontendBucketName",
+    "OutputValue": "wiseuni-frontend-dev-116981775669",
+    "Description": "S3 bucket for frontend static files",
+    "ExportName": "wiseuni-FrontendBucketName-dev"
+  },
+  {
+    "OutputKey": "HomeworkBucketName",
+    "OutputValue": "wiseuni-uploads-dev-116981775669",
+    "Description": "S3 Bucket Name (for file uploads)",
+    "ExportName": "wiseuni-BucketName-dev"
+  },
+  {
+    "OutputKey": "IdentityPoolId",
+    "OutputValue": "us-east-1:58e8255e-7015-4979-9278-efaf7418a829",
+    "Description": "Cognito Identity Pool ID",
+    "ExportName": "wiseuni-IdentityPoolId-dev"
+  },
+  {
+    "OutputKey": "WiseUniTableArn",
+    "OutputValue": "arn:aws:dynamodb:us-east-1:116981775669:table/wiseuni-data-dev",
+    "Description": "DynamoDB Table ARN",
+    "ExportName": "wiseuni-TableArn-dev"
+  },
+  {
+    "OutputKey": "HomeworkBucketArn",
+    "OutputValue": "arn:aws:s3:::wiseuni-uploads-dev-116981775669",
+    "Description": "S3 Bucket ARN",
+    "ExportName": "wiseuni-BucketArn-dev"
+  }
+]
