@@ -11,6 +11,9 @@ Parameters:
     Type: String # wiseuni
   Environment:
     Type: String # prod
+  UserPoolArn:
+    Type: String
+    Description: ARN of the Cognito User Pool
   # Also passed to Lambda as environment variable
 
 # Globals
@@ -68,6 +71,14 @@ Resources:
       # "index.handler" means: in index.py, call the handler() function
       Description: Validates email domain before signup
 
+  PreSignUpPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PreSignUpFunction
+      Principal: cognito-idp.amazonaws.com
+      Action: lambda:InvokeFunction
+      SourceArn: !Ref UserPoolArn
+
   # Post-Confirmation Function
   # Runs after the user verifies their email (by clicking confirmation email or enter code)
   # Use Cases:
@@ -98,6 +109,14 @@ Resources:
                 - ses:SendRawEmail # Send raw email (with attachment)
               Resource: "*" # Any ses identity
               # prod stage it could be directed to specific resource such as Resource: "arn:aws:ses:eu-west-2:123456789:identity/wiseuni.com"
+  # Grant Cognito permission to invoke PostConfirmation
+  PostConfirmationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PostConfirmationFunction
+      Principal: cognito-idp.amazonaws.com
+      Action: lambda:InvokeFunction
+      SourceArn: !Ref UserPoolArn
 
   # Pre-authentication Function
   # Runs before user is authenticated (after password check passes)
@@ -120,6 +139,14 @@ Resources:
       # No special policies needed - just basic Lambda execution
       # SAM automatically adds AWSLambdaBasicExecutionRole
       # (permission to write logs to CloudWatch)
+  # Grant Cognito permission to invoke PreAuthentication
+  PreAuthenticationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PreAuthenticationFunction
+      Principal: cognito-idp.amazonaws.com
+      Action: lambda:InvokeFunction
+      SourceArn: !Ref UserPoolArn
 
   # Custom message function
   # Runs when cognito needs to send any email or SMS
@@ -146,6 +173,14 @@ Resources:
       Description: Customizes email templates
       # No special policies needed
       # Just modifies the message content doesnt calls other services
+  #Grant Cognito permission to invoke CustomMessage
+  CustomMessagePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CustomMessageFunction
+      Principal: cognito-idp.amazonaws.com
+      Action: lambda:InvokeFunction
+      SourceArn: !Ref UserPoolArn
 # Function ARNs are exported so Cognito can invoke them
 # cognito.yaml stack needs these ARNs to configure Lambda triggers
 Outputs:

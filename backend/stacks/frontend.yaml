@@ -19,7 +19,7 @@ Resources:
   FrontendBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub ${ProjectName}-frontend-${Environment}-${AWS::AccountId}
+      # BucketName: !Sub ${ProjectName}-frontend-${Environment}-${AWS::AccountId}
       # Bucket name must be globally unique
       # Format: wiseuni-frontend-dev-116981775669
 

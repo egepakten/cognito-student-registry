@@ -13,13 +13,13 @@
   },
   {
     "OutputKey": "CloudFrontDistributionId",
-    "OutputValue": "E3PO8HQO2XRH07",
+    "OutputValue": "ETKT1FNMAYLFK",
     "Description": "CloudFront distribution ID",
     "ExportName": "wiseuni-CloudFrontDistributionId-dev"
   },
   {
     "OutputKey": "WebsiteURL",
-    "OutputValue": "https://d2jo7r8jja29jh.cloudfront.net",
+    "OutputValue": "https://d3a3kwq6ojsn4a.cloudfront.net",
     "Description": "? Your WiseUni website URL (click to visit!)",
     "ExportName": "wiseuni-WebsiteURL-dev"
   },
@@ -43,25 +43,25 @@
   },
   {
     "OutputKey": "CloudFrontDomainName",
-    "OutputValue": "d2jo7r8jja29jh.cloudfront.net",
+    "OutputValue": "d3a3kwq6ojsn4a.cloudfront.net",
     "Description": "CloudFront domain name",
     "ExportName": "wiseuni-CloudFrontDomain-dev"
   },
   {
     "OutputKey": "UserPoolClientId",
-    "OutputValue": "7q8v66v0ps30tvv89haf3javeb",
+    "OutputValue": "6mud5d68m6d0a3f0s93146rpl1",
     "Description": "Cognito User Pool Client ID",
     "ExportName": "wiseuni-UserPoolClientId-dev"
   },
   {
     "OutputKey": "UserPoolId",
-    "OutputValue": "us-east-1_gVIyyM26a",
+    "OutputValue": "us-east-1_rsnnonqp2",
     "Description": "Cognito User Pool ID",
     "ExportName": "wiseuni-UserPoolId-dev"
   },
   {
     "OutputKey": "FrontendBucketName",
-    "OutputValue": "wiseuni-frontend-dev-116981775669",
+    "OutputValue": "wiseuni-cognito-stack-frontendstack-frontendbucket-o7iwbmde8joe",
     "Description": "S3 bucket for frontend static files",
     "ExportName": "wiseuni-FrontendBucketName-dev"
   },
@@ -73,7 +73,7 @@
   },
   {
     "OutputKey": "IdentityPoolId",
-    "OutputValue": "us-east-1:58e8255e-7015-4979-9278-efaf7418a829",
+    "OutputValue": "us-east-1:e766bb81-ca30-41dd-9dcc-b2332de5ce61",
     "Description": "Cognito Identity Pool ID",
     "ExportName": "wiseuni-IdentityPoolId-dev"
   },

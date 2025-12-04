@@ -15,22 +15,6 @@ Parameters:
     - prod
     Description: Environment name (dev, staging, prod)
 Resources:
-  LambdaTriggersStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/00294b77bd734beb34b0ed39bba5a34f.template
-      Parameters:
-        ProjectName:
-          Ref: ProjectName
-        Environment:
-          Ref: Environment
-      Tags:
-      - Key: Project
-        Value:
-          Ref: ProjectName
-      - Key: Environment
-        Value:
-          Ref: Environment
   CognitoStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -40,22 +24,31 @@ Resources:
           Ref: ProjectName
         Environment:
           Ref: Environment
-        PreSignUpFunctionArn:
+        PreSignUpFunctionArn: ''
+        PostConfirmationFunctionArn: ''
+        PreAuthenticationFunctionArn: ''
+        CustomMessageFunctionArn: ''
+      Tags:
+      - Key: Project
+        Value:
+          Ref: ProjectName
+      - Key: Environment
+        Value:
+          Ref: Environment
+  LambdaTriggersStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: CognitoStack
+    Properties:
+      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/e4efa6926955eaa83b10f80fd6ffc95c.template
+      Parameters:
+        ProjectName:
+          Ref: ProjectName
+        Environment:
+          Ref: Environment
+        UserPoolArn:
           Fn::GetAtt:
-          - LambdaTriggersStack
-          - Outputs.PreSignUpFunctionArn
-        PostConfirmationFunctionArn:
-          Fn::GetAtt:
-          - LambdaTriggersStack
-          - Outputs.PostConfirmationFunctionArn
-        PreAuthenticationFunctionArn:
-          Fn::GetAtt:
-          - LambdaTriggersStack
-          - Outputs.PreAuthenticationFunctionArn
-        CustomMessageFunctionArn:
-          Fn::GetAtt:
-          - LambdaTriggersStack
-          - Outputs.CustomMessageFunctionArn
+          - CognitoStack
+          - Outputs.UserPoolArn
       Tags:
       - Key: Project
         Value:
@@ -126,7 +119,7 @@ Resources:
   FrontendStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/dcb1a50e9c9f14cdcc02273f55b7212a.template
+      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/116c71e1fe5fe02bca7bb06f539d0469.template
       Parameters:
         ProjectName:
           Ref: ProjectName

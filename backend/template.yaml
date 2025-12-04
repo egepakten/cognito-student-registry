@@ -17,20 +17,6 @@ Parameters:
     Description: Environment name (dev, staging, prod)
 
 Resources:
-  # LAMBDA TRIGGERS STACK
-  LambdaTriggersStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: stacks/lambda-triggers.yaml
-      Parameters:
-        ProjectName: !Ref ProjectName
-        Environment: !Ref Environment
-      Tags:
-        - Key: Project
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
-
   # COGNITO STACK
   CognitoStack:
     Type: AWS::CloudFormation::Stack
@@ -39,10 +25,26 @@ Resources:
       Parameters:
         ProjectName: !Ref ProjectName
         Environment: !Ref Environment
-        PreSignUpFunctionArn: !GetAtt LambdaTriggersStack.Outputs.PreSignUpFunctionArn
-        PostConfirmationFunctionArn: !GetAtt LambdaTriggersStack.Outputs.PostConfirmationFunctionArn
-        PreAuthenticationFunctionArn: !GetAtt LambdaTriggersStack.Outputs.PreAuthenticationFunctionArn
-        CustomMessageFunctionArn: !GetAtt LambdaTriggersStack.Outputs.CustomMessageFunctionArn
+        PreSignUpFunctionArn: ""
+        PostConfirmationFunctionArn: ""
+        PreAuthenticationFunctionArn: ""
+        CustomMessageFunctionArn: ""
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # LAMBDA TRIGGERS STACK
+  LambdaTriggersStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: CognitoStack
+    Properties:
+      TemplateURL: stacks/lambda-triggers.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        UserPoolArn: !GetAtt CognitoStack.Outputs.UserPoolArn
       Tags:
         - Key: Project
           Value: !Ref ProjectName
@@ -181,18 +183,12 @@ Outputs:
     Export:
       Name: !Sub ${ProjectName}-AdminRoleArn-${Environment}
 
-  # FRONTEND OUTPUTS 
+  # FRONTEND OUTPUTS
   FrontendBucketName:
     Description: S3 bucket for frontend static files
     Value: !GetAtt FrontendStack.Outputs.FrontendBucketName
     Export:
       Name: !Sub ${ProjectName}-FrontendBucketName-${Environment}
-
-  CloudFrontDistributionId:
-    Description: CloudFront distribution ID
-    Value: !GetAtt FrontendStack.Outputs.CloudFrontDistributionId
-    Export:
-      Name: !Sub ${ProjectName}-CloudFrontDistributionId-${Environment}
 
   CloudFrontDistributionId:
     Description: CloudFront distribution ID
