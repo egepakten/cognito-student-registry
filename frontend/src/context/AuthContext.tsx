@@ -1,6 +1,3 @@
-// frontend/src/context/AuthContext.tsx
-// ✅ COMPLETE WORKING VERSION
-
 import {
   createContext,
   useContext,
@@ -14,14 +11,10 @@ import {
   AuthTokens,
 } from "../types/cognitoService.types";
 
-// ========================================
 // CREATE CONTEXT
-// ========================================
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// ========================================
 // HOOK TO USE CONTEXT
-// ========================================
 export function useAuthContext(): AuthContextValue {
   const context = useContext(AuthContext);
   if (!context) {
@@ -30,9 +23,7 @@ export function useAuthContext(): AuthContextValue {
   return context;
 }
 
-// ========================================
 // PROVIDER COMPONENT
-// ========================================
 export function AuthProvider({ children }: { children: ReactNode }) {
   // State for decoded user info (for UI display)
   const [user, setUser] = useState<CognitoUserInfo | null>(null);
@@ -43,9 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Loading state
   const [loading, setLoading] = useState(true);
 
-  // ========================================
   // CHECK EXISTING SESSION ON PAGE LOAD
-  // ========================================
+
   useEffect(() => {
     checkExistingSession();
   }, []);
@@ -79,9 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // ========================================
   // HANDLE AUTH SUCCESS (Called from Login.tsx)
-  // ========================================
+
   function handleAuthSuccess(authTokens: AuthTokens) {
     console.log("🔐 handleAuthSuccess called");
 
@@ -100,9 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("✅ Auth state updated successfully");
   }
 
-  // ========================================
   // DECODE JWT TOKEN
-  // ========================================
+
   function decodeJWT(token: string): CognitoUserInfo {
     try {
       const base64Url = token.split(".")[1];
@@ -120,9 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // ========================================
   // CLEAR SESSION
-  // ========================================
+
   function clearSession() {
     setUser(null);
     setTokens(null);
@@ -130,17 +117,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("wiseuni_user");
   }
 
-  // ========================================
   // LOGOUT
-  // ========================================
+
   function logout() {
     console.log("👋 Logging out...");
     clearSession();
   }
 
-  // ========================================
   // CONTEXT VALUE
-  // ========================================
+
   const value: AuthContextValue = {
     user,
     tokens, // ← For AWS SDK calls (tokens.idToken)

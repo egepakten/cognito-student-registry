@@ -1,4 +1,3 @@
-// frontend/src/components/UploadHomework.tsx
 /**
  * Homework Upload Component
  *
@@ -9,7 +8,6 @@
 import { useState } from "react";
 import { useS3Upload } from "../hooks/useS3Upload";
 
-// ✅ IMPORTANT: Must be 'export default'
 export default function UploadHomework() {
   const { uploading, error, successMessage, uploadFile } = useS3Upload();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
