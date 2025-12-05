@@ -18,7 +18,7 @@ Resources:
   CognitoStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/4ad477e5a4bea47a00fee078a47d7665.template
+      TemplateURL: https://s3.us-east-1.amazonaws.com/wiseuni-deploy-116981775669/6fd2ee93ed293365f8c2a1fe56aae520.template
       Parameters:
         ProjectName:
           Ref: ProjectName

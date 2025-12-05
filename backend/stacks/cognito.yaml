@@ -233,12 +233,13 @@ Resources:
       CallbackURLs:
         - http://localhost:5173/callback # vite dev server
         - http://localhost:3000/callback # Create React App dev server
-      # - https://app.wiseuni.com/callback = Production Version
+        - https://d3a3kwq6ojsn4a.cloudfront.net/callback
       # Security Only URL on the list allowed, prevent attacker from redirecting tokens to their own site
 
       LogoutURLs:
         - http://localhost:5173/
         - http://localhost:3000/
+        - https://d3a3kwq6ojsn4a.cloudfront.net/
         # Where to redirect after logout
 
       # Identity Providers
@@ -388,6 +389,6 @@ Outputs:
   HostedUILoginURL:
     Description: Hosted UI Login URL
     Value: !Sub
-      - "https://${Domain}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${ClientId}&response_type=code&scope=email+openid+profile&redirect_uri=http://localhost:5173/callback"
+      - "https://${Domain}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${ClientId}&response_type=code&scope=email+openid+profile&redirect_uri=https%3A%2F%2Fd3a3kwq6ojsn4a.cloudfront.net%2Fcallback"
       - Domain: !Ref UserPoolDomain
         ClientId: !Ref UserPoolClient
